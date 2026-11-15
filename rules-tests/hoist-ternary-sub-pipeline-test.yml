@@ -1,0 +1,34 @@
+id: hoist-ternary-sub-pipeline
+valid:
+    - |
+        fs.stat(appDir).pipe(
+          Effect.flatMap((info) => info.type === "Directory" ? fs.exists(path) : Effect.succeed(false)),
+          Effect.map((exists) => (exists ? [name] : []))
+        );
+invalid:
+    - |
+        fs.stat(appDir).pipe(
+          Effect.flatMap((info) =>
+            info.type === "Directory"
+              ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))
+              : Effect.succeed<string[]>([])
+          )
+        );
+    - |
+        fs.stat(appDir).pipe(
+          Effect.flatMap((info) =>
+            info.type === "Directory"
+              ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))
+              : Effect.succeed([])
+          )
+        );
+    - |
+        Effect.forEach(entries, (name) =>
+          fs.stat(name).pipe(
+            Effect.flatMap((info) =>
+              info.type === "Directory"
+                ? fs.exists(name).pipe(Effect.map((exists) => (exists ? [name] : [])))
+                : Effect.succeed([])
+            )
+          )
+        );

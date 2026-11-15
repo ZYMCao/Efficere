@@ -1,0 +1,42 @@
+id: prefer-function-declaration-tsx
+valid:
+    - |
+        function alreadyDeclared(x: number): number {
+          return x;
+        }
+    - |
+        const first = (x: number): number => {
+          return x;
+        }, second = (y: number): number => {
+          return y;
+        };
+    - |
+        const object = {
+          method: (x: number): number => {
+            return x;
+          },
+          other: (y: number): number => y,
+        };
+invalid:
+    - |
+        const typed = (x: number): number => {
+          return x + 1;
+        };
+    - |
+        const empty = (): void => {
+          void 0;
+        };
+    - |
+        const component = (props: { readonly title: string }) => {
+          return <div>{props.title}</div>;
+        };
+    - |
+        export const exported = (x: number): number => {
+          return x;
+        };
+    - "const typedExpr = (x: number): number => x + 1;"
+    - "const untypedExpr = (x: number) => x + 1;"
+    - |
+        const elementExpr = (props: { readonly title: string }) => <div>{props.title}</div>;
+    - |
+        const render = () => <div />;

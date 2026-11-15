@@ -1,0 +1,73 @@
+id: prefer-pipe
+snapshots:
+    "Effect.flatMap(Effect.all([fs, path]), ([f, p]) => {\n  return Effect.flatMap(f.stat(\"dir\"), (info) =>\n    info.type === \"Directory\" ? f.exists(\"p\").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])\n  );\n});\n":
+        fixed: |
+            Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => {
+              return f.stat("dir").pipe(Effect.flatMap((info) => (info.type === "Directory" ? f.exists("p") : Effect.succeed(false))), Effect.map((e) => (e ? [name] : [])));
+            }));
+        labels:
+            - source: |-
+                  Effect.flatMap(Effect.all([fs, path]), ([f, p]) => {
+                    return Effect.flatMap(f.stat("dir"), (info) =>
+                      info.type === "Directory" ? f.exists("p").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])
+                    );
+                  })
+              style: primary
+              start: 0
+              end: 229
+    "Effect.flatMap(Repo, (repo) => repo.get(id));":
+        fixed: Repo.pipe(Effect.flatMap((repo) => repo.get(id)));
+        labels:
+            - source: Effect.flatMap(Repo, (repo) => repo.get(id))
+              style: primary
+              start: 0
+              end: 44
+    "Effect.flatMap(f.stat(\"dir\"), (info) =>\n  info.type === \"Directory\" ? f.exists(\"p\").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])\n);\n":
+        fixed: |
+            f.stat("dir").pipe(Effect.flatMap((info) =>
+              info.type === "Directory" ? f.exists("p").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])));
+        labels:
+            - source: |-
+                  Effect.flatMap(f.stat("dir"), (info) =>
+                    info.type === "Directory" ? f.exists("p").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])
+                  )
+              style: primary
+              start: 0
+              end: 159
+    "Effect.flatMap(fs.exists(file), (exists) => (exists ? Effect.map(fs.readFileString(file), parseEnvFile) : Effect.succeed({})));":
+        fixed: "fs.exists(file).pipe(Effect.flatMap((exists) => (exists ? fs.readFileString(file).pipe(Effect.map(parseEnvFile)) : Effect.succeed({}))));"
+        labels:
+            - source: "Effect.flatMap(fs.exists(file), (exists) => (exists ? Effect.map(fs.readFileString(file), parseEnvFile) : Effect.succeed({})))"
+              style: primary
+              start: 0
+              end: 126
+    "Effect.forEach(items, (item) => Effect.flatMap(fs.stat(item), (info) => check(info)));":
+        fixed: >-
+            Effect.forEach(items, (item) => fs.stat(item).pipe(Effect.flatMap((info) =>
+            check(info))));
+        labels:
+            - source: Effect.flatMap(fs.stat(item), (info) => check(info))
+              style: primary
+              start: 32
+              end: 84
+    "Effect.map(step1, (x) => toView(x));":
+        fixed: step1.pipe(Effect.map((x) => toView(x)));
+        labels:
+            - source: Effect.map(step1, (x) => toView(x))
+              style: primary
+              start: 0
+              end: 35
+    "Effect.tap(step1, (x) => Console.log(x));":
+        fixed: step1.pipe(Effect.tap((x) => Console.log(x)));
+        labels:
+            - source: Effect.tap(step1, (x) => Console.log(x))
+              style: primary
+              start: 0
+              end: 40
+    "step1.pipe(Effect.andThen(Effect.flatMap(step2, (x) => step3(x))));":
+        fixed: step1.pipe(Effect.andThen(step2.pipe(Effect.flatMap((x) => step3(x)))));
+        labels:
+            - source: Effect.flatMap(step2, (x) => step3(x))
+              style: primary
+              start: 26
+              end: 64

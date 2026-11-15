@@ -52,8 +52,8 @@ export const computeRoutingPlan = Match.type<DispatchCommand>().pipe(
 );
 
 // 3. Value-level Match with predicate guards
-export const classifyLatencyTier = (slaMs: number) =>
-	Match.value(slaMs).pipe(
+export function classifyLatencyTier(slaMs: number) {
+	return Match.value(slaMs).pipe(
 		Match.when(
 			(ms) => ms <= 400,
 			() => "realtime",
@@ -64,15 +64,16 @@ export const classifyLatencyTier = (slaMs: number) =>
 		),
 		Match.orElse(() => "batch"),
 	);
+}
 
-export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> => {
+export function runStage04(input: Stage04Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const trace: Array<TraceEvent> = [];
 	const kind = input.commandType ?? "SendEmail";
 	const target = (input.target ?? "ops@acme.dev").trim() || "ops@acme.dev";
 	const urgency = Number(input.urgency ?? 5);
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -81,7 +82,7 @@ export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	const rawCommand =
 		kind === "SendSms"
@@ -123,4 +124,4 @@ export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> =
 			trace,
 		};
 	});
-};
+}

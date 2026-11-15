@@ -1,0 +1,94 @@
+id: prefer-function-declaration-tsx
+snapshots:
+    "const component = (props: { readonly title: string }) => {\n  return <div>{props.title}</div>;\n};\n":
+        fixed: |
+            function component(props: { readonly title: string }) {
+              return <div>{props.title}</div>;
+            }
+        labels:
+            - source: |-
+                  const component = (props: { readonly title: string }) => {
+                    return <div>{props.title}</div>;
+                  };
+              style: primary
+              start: 0
+              end: 96
+    "const elementExpr = (props: { readonly title: string }) => <div>{props.title}</div>;\n":
+        fixed: |
+            function elementExpr(props: { readonly title: string }) {
+            	return <div>{props.title}</div>;
+            }
+        labels:
+            - source: "const elementExpr = (props: { readonly title: string }) => <div>{props.title}</div>;"
+              style: primary
+              start: 0
+              end: 84
+    "const empty = (): void => {\n  void 0;\n};\n":
+        fixed: |
+            function empty(): void {
+              void 0;
+            }
+        labels:
+            - source: |-
+                  const empty = (): void => {
+                    void 0;
+                  };
+              style: primary
+              start: 0
+              end: 40
+    "const render = () => <div />;\n":
+        fixed: |
+            function render() {
+            	return <div />;
+            }
+        labels:
+            - source: const render = () => <div />;
+              style: primary
+              start: 0
+              end: 29
+    "const typed = (x: number): number => {\n  return x + 1;\n};\n":
+        fixed: |
+            function typed(x: number): number {
+              return x + 1;
+            }
+        labels:
+            - source: |-
+                  const typed = (x: number): number => {
+                    return x + 1;
+                  };
+              style: primary
+              start: 0
+              end: 57
+    "const typedExpr = (x: number): number => x + 1;":
+        fixed: |-
+            function typedExpr(x: number): number {
+            	return x + 1;
+            }
+        labels:
+            - source: "const typedExpr = (x: number): number => x + 1;"
+              style: primary
+              start: 0
+              end: 47
+    "const untypedExpr = (x: number) => x + 1;":
+        fixed: |-
+            function untypedExpr(x: number) {
+            	return x + 1;
+            }
+        labels:
+            - source: "const untypedExpr = (x: number) => x + 1;"
+              style: primary
+              start: 0
+              end: 41
+    "export const exported = (x: number): number => {\n  return x;\n};\n":
+        fixed: |
+            export function exported(x: number): number {
+              return x;
+            }
+        labels:
+            - source: |-
+                  const exported = (x: number): number => {
+                    return x;
+                  };
+              style: primary
+              start: 7
+              end: 63

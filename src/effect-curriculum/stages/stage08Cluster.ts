@@ -114,14 +114,14 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
 	{ maxIdleTime: "5 minutes", concurrency: 1 },
 );
 
-export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> => {
+export function runStage08(input: Stage08Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const tenantA = (input.tenantA ?? "tenant-acme").trim() || "tenant-acme";
 	const tenantB = (input.tenantB ?? "tenant-globex").trim() || "tenant-globex";
 	const burstCount = Math.max(1, Math.min(4, Number(input.messagesPerTenant ?? 2)));
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -130,7 +130,7 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	const ClusterLayer = TenantDispatcherLive.pipe(Layer.provideMerge(TestRunner.layer));
 
@@ -183,4 +183,4 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
 			actorGuarantees: "Single-writer serialized mailbox (concurrency=1), shard-routed by EntityId, automatic passivation",
 		},
 	}));
-};
+}

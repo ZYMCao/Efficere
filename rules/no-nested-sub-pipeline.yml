@@ -1,0 +1,40 @@
+id: no-nested-sub-pipeline
+language: TypeScript
+severity: error
+message: "Do not open sub-pipelines (pipe / .pipe) inside expression callbacks. Continue the enclosing pipeline."
+rule:
+    any:
+        - pattern: pipe($$$)
+        - pattern: $SUB.pipe($$$)
+    not:
+        any:
+            - inside:
+                  pattern: Effect.andThen($EXPR.pipe($$$OPS))
+            - inside:
+                  pattern: "$COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : $FALLBACK"
+                  stopBy:
+                      kind: arrow_function
+    inside:
+        any:
+            - kind: arrow_function
+            - kind: function_expression
+        not:
+            has:
+                kind: statement_block
+        stopBy:
+            any:
+                - kind: function_declaration
+                - kind: method_definition
+                - kind: statement_block
+                - kind: arrow_function
+                - kind: function_expression
+        inside:
+            kind: arguments
+            inside:
+                any:
+                    - pattern: Effect.flatMap($$$)
+                    - pattern: Effect.map($$$)
+                    - pattern: Effect.tap($$$)
+                    - pattern: Effect.andThen($$$)
+                    - pattern: pipe($$$)
+                    - pattern: $ROOT.pipe($$$)

@@ -66,32 +66,32 @@ export default function App(): JSX.Element {
 		void executeStage("stage-01", snapshot(inputsByStage["stage-01"]));
 	});
 
-	const handleSelectStage = (stageId: StageId) => {
+	function handleSelectStage(stageId: StageId) {
 		setCurrentStageId(stageId);
 		setActiveSection("curriculum");
 		if (stageId === "stage-01" && codeTab() === "diff") {
 			setCodeTab("code");
 		}
 		void executeStage(stageId, snapshot(inputsByStage[stageId]));
-	};
+	}
 
-	const handleChangeField = (key: string, value: string | number | boolean) => {
+	function handleChangeField(key: string, value: string | number | boolean) {
 		const stageId = currentStage().id;
 		setInputsByStage((s) => {
 			s[stageId][key] = value;
 		});
-	};
+	}
 
-	const handleResetInputs = () => {
+	function handleResetInputs() {
 		const stage = currentStage();
 		const defaults = buildDefaultFieldValues(stage);
 		setInputsByStage((s) => {
 			s[stage.id] = defaults;
 		});
 		void executeStage(stage.id, defaults);
-	};
+	}
 
-	const handleJumpToSandbox = () => {
+	function handleJumpToSandbox() {
 		setActiveSection("curriculum");
 		setTimeout(() => {
 			document.getElementById("live-sandbox")?.scrollIntoView({
@@ -99,7 +99,7 @@ export default function App(): JSX.Element {
 				block: "start",
 			});
 		}, 50);
-	};
+	}
 
 	return (
 		<div id="top" class="min-h-screen flex flex-col bg-slate-50 text-slate-900">

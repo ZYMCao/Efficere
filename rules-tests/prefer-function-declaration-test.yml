@@ -1,0 +1,97 @@
+id: prefer-function-declaration
+valid:
+    - |
+        function alreadyDeclared(x: number): number {
+          return x;
+        }
+    - |
+        const first = (x: number): number => {
+          return x;
+        }, second = (y: number): number => {
+          return y;
+        };
+    - |
+        const first = (x: number): number => x, second = (y: number): number => y;
+    - |
+        const object = {
+          method: (x: number): number => {
+            return x;
+          },
+          other: (y: number): number => y,
+        };
+    - |
+        class Derived {
+          run(): void {
+            const withThis = (x: number): number => {
+              return this.parse(x);
+            };
+            const withThisExpr = (x: number): number => this.parse(x);
+            void [withThis, withThisExpr];
+          }
+          parse(x: number): number {
+            return x;
+          }
+        }
+    - |
+        class Derived {
+          run(): void {
+            const withSuper = (x: number): number => {
+              return super.toString().length + x;
+            };
+            void withSuper;
+          }
+        }
+    - |
+        function outer(): number {
+          const withArguments = (x: number): number => {
+            return arguments.length + x;
+          };
+          const withArgumentsExpr = (x: number): number => arguments.length + x;
+          return withArguments(1) + withArgumentsExpr(1);
+        }
+    - |
+        const noParens = x => {
+          return x;
+        };
+invalid:
+    - |
+        const typed = (x: number): number => {
+          return x + 1;
+        };
+    - |
+        const empty = (): void => {
+          void 0;
+        };
+    - |
+        const untyped = (x) => {
+          return x;
+        };
+    - |
+        const asyncTyped = async (x: string): Promise<string> => {
+          return x;
+        };
+    - |
+        const generic = <A>(rows: ReadonlyArray<A>): A => {
+          return rows[0] as A;
+        };
+    - |
+        export const exported = (x: number): number => {
+          return x;
+        };
+    - |
+        const outer = (): (() => void) => {
+          return () => {
+            void 0;
+          };
+        };
+    - "const typedExpr = (x: number): number => x + 1;"
+    - "const untypedExpr = (x: number) => x + 1;"
+    - |
+        const multiLineExpr = (items: ReadonlyArray<number>): number[] =>
+          items.map((item) => item + 1);
+    - |
+        const objectExpr = (x: number): { readonly x: number } => ({ x });
+    - |
+        const returnsArrow = (): ((x: number) => number) => (x) => x + 1;
+    - "const asyncExpr = async (x: number): Promise<number> => x + 1;"
+    - "const genericExpr = <A>(rows: ReadonlyArray<A>): A => rows[0] as A;"

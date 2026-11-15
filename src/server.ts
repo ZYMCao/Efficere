@@ -98,8 +98,8 @@ const ServerConfig = Config.all({
 	nodeEnv: Config.String("NODE_ENV").pipe(Config.withDefault("development")),
 });
 
-const runDevServer = (port: number) =>
-	Effect.scoped(
+function runDevServer(port: number) {
+	return Effect.scoped(
 		Effect.scopedWith((scope) =>
 			pipe(
 				Effect.all({
@@ -147,9 +147,10 @@ const runDevServer = (port: number) =>
 			),
 		).pipe(Effect.provide(NodeHttpServer.layerHttpServices)),
 	);
+}
 
-const runProdServer = (port: number) =>
-	pipe(
+function runProdServer(port: number) {
+	return pipe(
 		Layer.mergeAll(
 			ApiRoutesLayer,
 			HttpStaticServer.layer({
@@ -161,6 +162,7 @@ const runProdServer = (port: number) =>
 		Layer.provide(NodeHttpServer.layer(createServer, { host: "0.0.0.0", port })),
 		Layer.launch,
 	);
+}
 
 const main = pipe(
 	ServerConfig,

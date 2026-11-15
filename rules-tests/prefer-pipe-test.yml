@@ -1,0 +1,22 @@
+id: prefer-pipe
+valid:
+    - "repo.pipe(Effect.flatMap((r) => r.get(id)));"
+    - "step1.pipe(Effect.map((x) => toView(x)));"
+    - "step1.pipe(Effect.andThen(Effect.mapError(repo.upsert(input), toInternalError)));"
+invalid:
+    - "Effect.flatMap(Repo, (repo) => repo.get(id));"
+    - "Effect.map(step1, (x) => toView(x));"
+    - "Effect.tap(step1, (x) => Console.log(x));"
+    - |
+        Effect.flatMap(Effect.all([fs, path]), ([f, p]) => {
+          return Effect.flatMap(f.stat("dir"), (info) =>
+            info.type === "Directory" ? f.exists("p").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])
+          );
+        });
+    - "Effect.flatMap(fs.exists(file), (exists) => (exists ? Effect.map(fs.readFileString(file), parseEnvFile) : Effect.succeed({})));"
+    - "Effect.forEach(items, (item) => Effect.flatMap(fs.stat(item), (info) => check(info)));"
+    - "step1.pipe(Effect.andThen(Effect.flatMap(step2, (x) => step3(x))));"
+    - |
+        Effect.flatMap(f.stat("dir"), (info) =>
+          info.type === "Directory" ? f.exists("p").pipe(Effect.map((e) => (e ? [name] : []))) : Effect.succeed<string[]>([])
+        );

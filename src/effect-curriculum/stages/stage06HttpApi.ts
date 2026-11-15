@@ -114,7 +114,7 @@ export const DispatchGroupLive = HttpApiBuilder.group(LedgerApi, "dispatches", (
 // 5. Build Web-standard Request -> Response handler with HttpRouter.toWebHandler
 export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(Layer.provide(DispatchGroupLive), Layer.provide(DispatchStoreLive), Layer.provide(HttpServer.layerServices));
 
-export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> => {
+export function runStage06(input: Stage06Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const method = input.method === "GET" ? "GET" : "POST";
 	const path = method === "GET" ? (input.path ?? "/dispatches/disp-101").trim() : "/dispatches";
@@ -122,7 +122,7 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
 	const subject = (input.subject ?? "Quarterly Audit Ready").trim();
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -131,7 +131,7 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	pushTrace("HttpApiBuilder", "HttpRouter.toWebHandler", `Compiled LedgerApi routes and OpenAPI metadata`);
 
@@ -193,4 +193,4 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
 			},
 		};
 	});
-};
+}

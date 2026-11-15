@@ -1,0 +1,67 @@
+id: prefer-function-declaration-tsx
+language: Tsx
+severity: warning
+message: "Declare named functions with a function declaration, not a const arrow function."
+rewriters:
+    - id: async-typed-block
+      rule:
+          pattern: "const $NAME = async ($$$P): $T => { $$$B };"
+      fix: |-
+          async function $NAME($$$P): $T {
+            $$$B
+          }
+    - id: typed-block
+      rule:
+          pattern: "const $NAME = ($$$P): $T => { $$$B };"
+      fix: |-
+          function $NAME($$$P): $T {
+            $$$B
+          }
+    - id: untyped-block
+      rule:
+          pattern: "const $NAME = ($$$P) => { $$$B };"
+      fix: |-
+          function $NAME($$$P) {
+            $$$B
+          }
+    - id: async-typed-expr
+      rule:
+          pattern: "const $NAME = async ($$$P): $T => $EXPR;"
+      fix: "async function $NAME($$$P): $T {\n\treturn $EXPR;\n}"
+    - id: typed-expr
+      rule:
+          pattern: "const $NAME = ($$$P): $T => $EXPR;"
+      fix: "function $NAME($$$P): $T {\n\treturn $EXPR;\n}"
+    - id: untyped-expr
+      rule:
+          pattern: "const $NAME = ($$$P) => $EXPR;"
+      fix: "function $NAME($$$P) {\n\treturn $EXPR;\n}"
+rule:
+    pattern: $MATCH
+    all:
+        - any:
+              - pattern: "const $NAME = async ($$$P): $T => { $$$B };"
+              - pattern: "const $NAME = ($$$P): $T => { $$$B };"
+              - pattern: "const $NAME = ($$$P) => { $$$B };"
+              - pattern: "const $NAME = async ($$$P): $T => $EXPR;"
+              - pattern: "const $NAME = ($$$P): $T => $EXPR;"
+              - pattern: "const $NAME = ($$$P) => $EXPR;"
+        - not:
+              has:
+                  any:
+                      - kind: this
+                      - kind: super
+                      - pattern: arguments
+                  stopBy: end
+transform:
+    FIXED:
+        rewrite:
+            source: $MATCH
+            rewriters:
+                - async-typed-block
+                - typed-block
+                - untyped-block
+                - async-typed-expr
+                - typed-expr
+                - untyped-expr
+fix: $FIXED

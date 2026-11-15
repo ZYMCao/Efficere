@@ -36,8 +36,8 @@ export const SettingsLayer = Layer.effect(
 	}),
 );
 
-export const validateAndAttachConfig = (rawPayload: unknown) =>
-	pipe(
+export function validateAndAttachConfig(rawPayload: unknown) {
+	return pipe(
 		Effect.Do,
 		Effect.bind("settings", () => SettingsService),
 		Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
@@ -50,12 +50,13 @@ export const validateAndAttachConfig = (rawPayload: unknown) =>
 			payload,
 		})),
 	);
+}
 
-export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> => {
+export function runStage03(input: Stage03Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -64,7 +65,7 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	const envRecord: Record<string, string> = {
 		DISPATCH_REGION: (input.envRegion ?? "us-east-1").trim() || "us-east-1",
@@ -124,4 +125,4 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
 			trace,
 		};
 	});
-};
+}

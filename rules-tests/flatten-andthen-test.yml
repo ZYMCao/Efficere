@@ -1,0 +1,49 @@
+id: flatten-andthen
+valid:
+    - |
+        store.put(key, content).pipe(
+          translateStorage,
+          Effect.andThen(Effect.mapError(repository.upsert(input), toInternalError))
+        );
+    - |
+        repository.get(key).pipe(
+          Effect.mapError(toInternalError),
+          Effect.andThen(translateStorage(store.put(assetKey(id), content))),
+          Effect.andThen(Effect.mapError(repository.update(key, { totalBytes }), toInternalError)),
+          Effect.asVoid
+        );
+    - |
+        step1.pipe(
+          Effect.andThen(step2),
+          Effect.map(toView)
+        );
+invalid:
+    - |
+        store.put(key, content).pipe(
+          translateStorage,
+          Effect.andThen(repository.upsert(input).pipe(Effect.mapError(toInternalError)))
+        );
+    - |
+        repository.get(key).pipe(
+          Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))
+        );
+    - |
+        repository.get(key).pipe(
+          Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+        );
+    - |
+        step1.pipe(
+          Effect.andThen(discoverTargets(opts).pipe(Effect.result))
+        );
+    - |
+        step1.pipe(
+          Effect.andThen(step2.pipe(Effect.map(toView)))
+        );
+    - |
+        step1.pipe(
+          Effect.andThen(Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => run(f, p))))
+        );
+    - |
+        step1.pipe(
+          Effect.andThen(step2.pipe(Effect.retry(policy), Effect.mapError(toInternalError)))
+        );

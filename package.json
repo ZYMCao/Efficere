@@ -8,7 +8,7 @@
 		"dev": "tsx src/server.ts",
 		"build": "vp build",
 		"preview": "vp preview",
-		"lint": "vp lint"
+		"lint": "vp lint && node_modules/.bin/ast-grep scan --update-all && vp fmt --fix"
 	},
 	"dependencies": {
 		"@effect/platform-node": "~4",

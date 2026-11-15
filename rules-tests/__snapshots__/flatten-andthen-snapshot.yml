@@ -1,0 +1,206 @@
+id: flatten-andthen
+snapshots:
+    "repository.get(key).pipe(\n  Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))\n);\n":
+        fixed: |
+            repository.get(key).pipe(
+              Effect.andThen(Effect.mapError(repository.update(key, { totalBytes }), toInternalError)), Effect.asVoid
+            );
+        labels:
+            - source: >-
+                  Effect.andThen(repository.update(key, { totalBytes
+                  }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+              style: primary
+              start: 28
+              end: 136
+            - source: |-
+                  repository.get(key).pipe(
+                    Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+                  )
+              style: secondary
+              start: 0
+              end: 138
+            - source: |-
+                  (
+                    Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+                  )
+              style: secondary
+              start: 24
+              end: 138
+    "repository.get(key).pipe(\n  Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))\n);\n":
+        fixed: |
+            repository.get(key).pipe(
+              Effect.andThen(translateStorage(store.put(assetKey(id), content)))
+            );
+        labels:
+            - source: Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))
+              style: primary
+              start: 28
+              end: 99
+            - source: |-
+                  repository.get(key).pipe(
+                    Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))
+                  )
+              style: secondary
+              start: 0
+              end: 101
+            - source: |-
+                  (
+                    Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))
+                  )
+              style: secondary
+              start: 24
+              end: 101
+    "repository.get(key).pipe(\n  Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage)),\n  Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))\n);\n":
+        fixed: |
+            repository.get(key).pipe(
+              Effect.andThen(translateStorage(store.put(assetKey(id), content))),
+              Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+            );
+        labels:
+            - source: Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage))
+              style: primary
+              start: 28
+              end: 99
+            - source: |-
+                  repository.get(key).pipe(
+                    Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage)),
+                    Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+                  )
+              style: secondary
+              start: 0
+              end: 213
+            - source: |-
+                  (
+                    Effect.andThen(store.put(assetKey(id), content).pipe(translateStorage)),
+                    Effect.andThen(repository.update(key, { totalBytes }).pipe(Effect.mapError(toInternalError), Effect.asVoid))
+                  )
+              style: secondary
+              start: 24
+              end: 213
+    "step1.pipe(\n  Effect.andThen(Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => run(f, p))))\n);\n":
+        fixed: |
+            step1.pipe(
+              Effect.andThen(Effect.all([fs, path])), Effect.flatMap(([f, p]) => run(f, p))
+            );
+        labels:
+            - source: >-
+                  Effect.andThen(Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => run(f,
+                  p))))
+              style: primary
+              start: 14
+              end: 96
+            - source: |-
+                  step1.pipe(
+                    Effect.andThen(Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => run(f, p))))
+                  )
+              style: secondary
+              start: 0
+              end: 98
+            - source: |-
+                  (
+                    Effect.andThen(Effect.all([fs, path]).pipe(Effect.flatMap(([f, p]) => run(f, p))))
+                  )
+              style: secondary
+              start: 10
+              end: 98
+    "step1.pipe(\n  Effect.andThen(discoverTargets(opts).pipe(Effect.result))\n);\n":
+        fixed: |
+            step1.pipe(
+              Effect.andThen(Effect.result(discoverTargets(opts)))
+            );
+        labels:
+            - source: Effect.andThen(discoverTargets(opts).pipe(Effect.result))
+              style: primary
+              start: 14
+              end: 71
+            - source: |-
+                  step1.pipe(
+                    Effect.andThen(discoverTargets(opts).pipe(Effect.result))
+                  )
+              style: secondary
+              start: 0
+              end: 73
+            - source: |-
+                  (
+                    Effect.andThen(discoverTargets(opts).pipe(Effect.result))
+                  )
+              style: secondary
+              start: 10
+              end: 73
+    "step1.pipe(\n  Effect.andThen(step2.pipe(Effect.map(toView)))\n);\n":
+        fixed: |
+            step1.pipe(
+              Effect.andThen(step2), Effect.map(toView)
+            );
+        labels:
+            - source: Effect.andThen(step2.pipe(Effect.map(toView)))
+              style: primary
+              start: 14
+              end: 60
+            - source: |-
+                  step1.pipe(
+                    Effect.andThen(step2.pipe(Effect.map(toView)))
+                  )
+              style: secondary
+              start: 0
+              end: 62
+            - source: |-
+                  (
+                    Effect.andThen(step2.pipe(Effect.map(toView)))
+                  )
+              style: secondary
+              start: 10
+              end: 62
+    "step1.pipe(\n  Effect.andThen(step2.pipe(Effect.retry(policy), Effect.mapError(toInternalError)))\n);\n":
+        fixed: |
+            step1.pipe(
+              Effect.andThen(Effect.mapError(Effect.retry(step2, policy), toInternalError))
+            );
+        labels:
+            - source: >-
+                  Effect.andThen(step2.pipe(Effect.retry(policy),
+                  Effect.mapError(toInternalError)))
+              style: primary
+              start: 14
+              end: 96
+            - source: |-
+                  step1.pipe(
+                    Effect.andThen(step2.pipe(Effect.retry(policy), Effect.mapError(toInternalError)))
+                  )
+              style: secondary
+              start: 0
+              end: 98
+            - source: |-
+                  (
+                    Effect.andThen(step2.pipe(Effect.retry(policy), Effect.mapError(toInternalError)))
+                  )
+              style: secondary
+              start: 10
+              end: 98
+    "store.put(key, content).pipe(\n  translateStorage,\n  Effect.andThen(repository.upsert(input).pipe(Effect.mapError(toInternalError)))\n);\n":
+        fixed: |
+            store.put(key, content).pipe(
+              translateStorage,
+              Effect.andThen(Effect.mapError(repository.upsert(input), toInternalError))
+            );
+        labels:
+            - source: Effect.andThen(repository.upsert(input).pipe(Effect.mapError(toInternalError)))
+              style: primary
+              start: 52
+              end: 131
+            - source: |-
+                  store.put(key, content).pipe(
+                    translateStorage,
+                    Effect.andThen(repository.upsert(input).pipe(Effect.mapError(toInternalError)))
+                  )
+              style: secondary
+              start: 0
+              end: 133
+            - source: |-
+                  (
+                    translateStorage,
+                    Effect.andThen(repository.upsert(input).pipe(Effect.mapError(toInternalError)))
+                  )
+              style: secondary
+              start: 28
+              end: 133

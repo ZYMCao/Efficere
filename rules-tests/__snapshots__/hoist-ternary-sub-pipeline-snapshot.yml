@@ -1,0 +1,49 @@
+id: hoist-ternary-sub-pipeline
+snapshots:
+    "Effect.forEach(entries, (name) =>\n  fs.stat(name).pipe(\n    Effect.flatMap((info) =>\n      info.type === \"Directory\"\n        ? fs.exists(name).pipe(Effect.map((exists) => (exists ? [name] : [])))\n        : Effect.succeed([])\n    )\n  )\n);\n":
+        fixed: |
+            Effect.forEach(entries, (name) =>
+              fs.stat(name).pipe(Effect.flatMap((info) => (info.type === "Directory" ? fs.exists(name) : Effect.succeed(false))), Effect.map((exists) => (exists ? [name] : [])))
+            );
+        labels:
+            - source: |-
+                  fs.stat(name).pipe(
+                      Effect.flatMap((info) =>
+                        info.type === "Directory"
+                          ? fs.exists(name).pipe(Effect.map((exists) => (exists ? [name] : [])))
+                          : Effect.succeed([])
+                      )
+                    )
+              style: primary
+              start: 36
+              end: 234
+    "fs.stat(appDir).pipe(\n  Effect.flatMap((info) =>\n    info.type === \"Directory\"\n      ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))\n      : Effect.succeed([])\n  )\n);\n":
+        fixed: |
+            fs.stat(appDir).pipe(Effect.flatMap((info) => (info.type === "Directory" ? fs.exists(path) : Effect.succeed(false))), Effect.map((exists) => (exists ? [name] : [])));
+        labels:
+            - source: |-
+                  fs.stat(appDir).pipe(
+                    Effect.flatMap((info) =>
+                      info.type === "Directory"
+                        ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))
+                        : Effect.succeed([])
+                    )
+                  )
+              style: primary
+              start: 0
+              end: 188
+    "fs.stat(appDir).pipe(\n  Effect.flatMap((info) =>\n    info.type === \"Directory\"\n      ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))\n      : Effect.succeed<string[]>([])\n  )\n);\n":
+        fixed: |
+            fs.stat(appDir).pipe(Effect.flatMap((info) => (info.type === "Directory" ? fs.exists(path) : Effect.succeed(false))), Effect.map((exists) => (exists ? [name] : [])));
+        labels:
+            - source: |-
+                  fs.stat(appDir).pipe(
+                    Effect.flatMap((info) =>
+                      info.type === "Directory"
+                        ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))
+                        : Effect.succeed<string[]>([])
+                    )
+                  )
+              style: primary
+              start: 0
+              end: 198

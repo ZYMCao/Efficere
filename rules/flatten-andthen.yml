@@ -1,0 +1,151 @@
+id: flatten-andthen
+language: TypeScript
+severity: error
+message: "Do not nest .pipe(...) inside Effect.andThen(...). Hoist success-channel operators to the outer pipe or apply scoped operators in static form."
+rewriters:
+    - id: hoist-success-call
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP($$$ARGS)))
+      constraints:
+          OP:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+      fix: Effect.andThen($EXPR), Effect.$OP($$$ARGS)
+    - id: hoist-success-unary
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP))
+      constraints:
+          OP:
+              regex: ^(asVoid|asSome)$
+      fix: Effect.andThen($EXPR), Effect.$OP
+    - id: hoist-success-call-pair
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP1($$$ARGS1), Effect.$OP2($$$ARGS2)))
+      constraints:
+          OP1:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+          OP2:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+      fix: Effect.andThen($EXPR), Effect.$OP1($$$ARGS1), Effect.$OP2($$$ARGS2)
+    - id: hoist-success-call-then-unary
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP1($$$ARGS1), Effect.$OP2))
+      constraints:
+          OP1:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+          OP2:
+              regex: ^(asVoid|asSome)$
+      fix: Effect.andThen($EXPR), Effect.$OP1($$$ARGS1), Effect.$OP2
+    - id: static-effect-call
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP($$$ARGS)))
+      fix: Effect.andThen(Effect.$OP($EXPR, $$$ARGS))
+    - id: static-unary-fn
+      rule:
+          pattern: Effect.andThen($EXPR.pipe($FN))
+      constraints:
+          FN:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+      fix: Effect.andThen($FN($EXPR))
+    - id: static-effect-call-then-hoist-unary
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP($$$ARGS), Effect.$TAIL_OP))
+      constraints:
+          TAIL_OP:
+              regex: ^(asVoid|asSome)$
+      fix: Effect.andThen(Effect.$OP($EXPR, $$$ARGS)), Effect.$TAIL_OP
+    - id: static-effect-call-then-hoist-call
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP($$$ARGS), Effect.$TAIL_OP($$$TAIL_ARGS)))
+      constraints:
+          TAIL_OP:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+      fix: Effect.andThen(Effect.$OP($EXPR, $$$ARGS)), Effect.$TAIL_OP($$$TAIL_ARGS)
+    - id: static-unary-fn-then-hoist-unary
+      rule:
+          pattern: Effect.andThen($EXPR.pipe($FN, Effect.$TAIL_OP))
+      constraints:
+          FN:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+          TAIL_OP:
+              regex: ^(asVoid|asSome)$
+      fix: Effect.andThen($FN($EXPR)), Effect.$TAIL_OP
+    - id: static-unary-fn-then-hoist-call
+      rule:
+          pattern: Effect.andThen($EXPR.pipe($FN, Effect.$TAIL_OP($$$TAIL_ARGS)))
+      constraints:
+          FN:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+          TAIL_OP:
+              regex: ^(map|flatMap|andThen|tap|as|asSome)$
+      fix: Effect.andThen($FN($EXPR)), Effect.$TAIL_OP($$$TAIL_ARGS)
+    - id: static-effect-call-pair
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP1($$$ARGS1), Effect.$OP2($$$ARGS2)))
+      fix: Effect.andThen(Effect.$OP2(Effect.$OP1($EXPR, $$$ARGS1), $$$ARGS2))
+    - id: static-effect-call-then-unary-fn
+      rule:
+          pattern: Effect.andThen($EXPR.pipe(Effect.$OP1($$$ARGS1), $FN2))
+      constraints:
+          FN2:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+      fix: Effect.andThen($FN2(Effect.$OP1($EXPR, $$$ARGS1)))
+    - id: static-unary-fn-then-effect-call
+      rule:
+          pattern: Effect.andThen($EXPR.pipe($FN1, Effect.$OP2($$$ARGS2)))
+      constraints:
+          FN1:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+      fix: Effect.andThen(Effect.$OP2($FN1($EXPR), $$$ARGS2))
+    - id: static-unary-fn-pair
+      rule:
+          pattern: Effect.andThen($EXPR.pipe($FN1, $FN2))
+      constraints:
+          FN1:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+          FN2:
+              any:
+                  - kind: identifier
+                  - kind: member_expression
+      fix: Effect.andThen($FN2($FN1($EXPR)))
+rule:
+    pattern: $MATCH
+    all:
+        - pattern: Effect.andThen($EXPR.pipe($$$OPS))
+        - inside:
+              kind: arguments
+              inside:
+                  any:
+                      - pattern: $ROOT.pipe($$$)
+                      - pattern: pipe($$$)
+transform:
+    FIXED:
+        rewrite:
+            source: $MATCH
+            rewriters:
+                - hoist-success-call
+                - hoist-success-unary
+                - hoist-success-call-pair
+                - hoist-success-call-then-unary
+                - static-effect-call
+                - static-unary-fn
+                - static-effect-call-then-hoist-unary
+                - static-effect-call-then-hoist-call
+                - static-unary-fn-then-hoist-unary
+                - static-unary-fn-then-hoist-call
+                - static-effect-call-pair
+                - static-effect-call-then-unary-fn
+                - static-unary-fn-then-effect-call
+                - static-unary-fn-pair
+fix: $FIXED

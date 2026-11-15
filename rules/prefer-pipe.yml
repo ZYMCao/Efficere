@@ -1,0 +1,41 @@
+id: prefer-pipe
+language: TypeScript
+severity: error
+message: "Do not use 2-argument static overloads; compose using .pipe(...) instead."
+rewriters:
+    - id: hoist-ternary-typed
+      rule:
+          pattern: "Effect.flatMap($SRC, ($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed<$T>($FALSY))"
+      fix: "$SRC.pipe(Effect.flatMap(($ARG) => ($COND ? $INNER : Effect.succeed(false))), Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY)))"
+    - id: hoist-ternary-untyped
+      rule:
+          pattern: "Effect.flatMap($SRC, ($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed($FALSY))"
+      fix: "$SRC.pipe(Effect.flatMap(($ARG) => ($COND ? $INNER : Effect.succeed(false))), Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY)))"
+    - id: static-to-pipe
+      rule:
+          pattern: "Effect.$R_OP($R_EXPR, $R_FN)"
+      constraints:
+          R_OP:
+              regex: ^(flatMap|map|tap)$
+      fix: "$R_EXPR.pipe(Effect.$R_OP($R_FN))"
+rule:
+    pattern: "Effect.$OP($EXPR, $FN)"
+    not:
+        inside:
+            stopBy: end
+            any:
+                - pattern: "Effect.flatMap($OUTER_EXPR, $OUTER_FN)"
+                - pattern: "Effect.map($OUTER_EXPR, $OUTER_FN)"
+                - pattern: "Effect.tap($OUTER_EXPR, $OUTER_FN)"
+constraints:
+    OP:
+        regex: ^(flatMap|map|tap)$
+transform:
+    FN_FIXED:
+        rewrite:
+            source: $FN
+            rewriters:
+                - hoist-ternary-typed
+                - hoist-ternary-untyped
+                - static-to-pipe
+fix: "$EXPR.pipe(Effect.$OP($FN_FIXED))"

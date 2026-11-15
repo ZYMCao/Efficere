@@ -1,0 +1,59 @@
+id: no-nested-sub-pipeline
+valid:
+    - "const helper = (x: number) => step1(x).pipe(Effect.map(step2));"
+    - |
+        step1.pipe(
+          Effect.flatMap(([fs, path]) => {
+            const root = path.join("dir");
+            return fs.readDirectory(root).pipe(Effect.map((entries) => entries.sort()));
+          })
+        );
+    - |
+        fs.stat(appDir).pipe(
+          Effect.flatMap((info) =>
+            info.type === "Directory"
+              ? fs.exists(path).pipe(Effect.map((exists) => (exists ? [name] : [])))
+              : Effect.succeed<string[]>([])
+          )
+        );
+    - |
+        Effect.tapError((err) =>
+          Repo.pipe(
+            Effect.flatMap((repo) => repo.delete(id)),
+            Effect.ignore
+          )
+        );
+    - |
+        self.pipe(
+          Effect.catchTag("StorageError", (err) =>
+            Console.error(err).pipe(Effect.andThen(Effect.fail(err)))
+          )
+        );
+    - |
+        Effect.forEach(items, (item) =>
+          step1(item).pipe(Effect.map(toView))
+        );
+    - |
+        Service.pipe(
+          Effect.map((service) =>
+            handlers.handleAll({
+              list: (request) => Authz.pipe(Effect.flatMap((scope) => service.list(scope.projectId, request.payload))),
+            })
+          )
+        );
+    - |
+        Mq.pipe(
+          Effect.flatMap((mq) =>
+            mq.take(job, (payload) => handler(payload).pipe(Effect.asVoid))
+          )
+        );
+invalid:
+    - |
+        pipe(
+          step1,
+          Effect.flatMap((x) => step2(x).pipe(Effect.map(step3)))
+        );
+    - |
+        step1.pipe(
+          Effect.andThen((x) => step2(x).pipe(Effect.map(step3)))
+        );

@@ -29,8 +29,8 @@ export class RecipientRepo extends Context.Service<
 >()("RecipientRepo") {}
 
 // 2. Pure pipeline using Effect.Do + Effect.bind + Option + typed errors
-export const prepareDispatch = (recipientId: string, costUnits: number) =>
-	pipe(
+export function prepareDispatch(recipientId: string, costUnits: number) {
+	return pipe(
 		Effect.Do,
 		Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
 		Effect.bind("recipient", ({ maybeRecipient }) =>
@@ -59,8 +59,9 @@ export const prepareDispatch = (recipientId: string, costUnits: number) =>
 					}),
 		),
 	);
+}
 
-export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> => {
+export function runStage02(input: Stage02Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const recipientId = (input.recipientId ?? "acct-acme").trim();
 	const costUnits = Number(input.costUnits ?? 3);
@@ -71,7 +72,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
 		"acct-low": { id: "acct-low", email: "billing@lowquota.io", remainingQuota: 2 },
 	};
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -80,7 +81,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	const RepoLive = Layer.succeed(RecipientRepo, {
 		findById: (id) =>
@@ -141,4 +142,4 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
 			},
 		};
 	});
-};
+}

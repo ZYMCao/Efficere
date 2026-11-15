@@ -16,7 +16,7 @@ export const QueuedDispatchSchema = Schema.Struct({
 
 export class TransientSmtpError extends Schema.TaggedError<TransientSmtpError>()("TransientSmtpError", { attempt: Schema.Number, reason: Schema.String }) {}
 
-export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> => {
+export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const idempotencyKey = (input.idempotencyKey ?? "order-9042").trim() || "order-9042";
 	const recipient = (input.recipient ?? "finance@acme.dev").trim() || "finance@acme.dev";
@@ -24,7 +24,7 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
 	const sendDuplicateOffer = input.sendDuplicateOffer ?? true;
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -33,7 +33,7 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	// Pure pipeline building PersistedQueue, offering with idempotency key, and taking with scoped retry
 	const program = pipe(
@@ -115,4 +115,4 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
 			deliveryGuarantee: "At-least-once with scoped acknowledgement & idempotency keys",
 		},
 	}));
-};
+}

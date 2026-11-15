@@ -8,7 +8,7 @@ import { runStage06 } from "./stages/stage06HttpApi";
 import { runStage07 } from "./stages/stage07PersistedQueue";
 import { runStage08 } from "./stages/stage08Cluster";
 
-export const runStageById = (stageId: StageId, input: Record<string, unknown>): Promise<StageExecutionResult> => {
+export function runStageById(stageId: StageId, input: Record<string, unknown>): Promise<StageExecutionResult> {
 	switch (stageId) {
 		case "stage-01":
 			return runStage01(input);
@@ -27,4 +27,4 @@ export const runStageById = (stageId: StageId, input: Record<string, unknown>): 
 		case "stage-08":
 			return runStage08(input);
 	}
-};
+}

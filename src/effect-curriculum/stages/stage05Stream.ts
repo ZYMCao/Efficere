@@ -15,13 +15,13 @@ const sampleBatch: ReadonlyArray<unknown> = [
 	{ _tag: "SendEmail", to: "security@acme.dev", subject: "Key Rotated", urgency: 4 },
 ];
 
-export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> => {
+export function runStage05(input: Stage05Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const concurrency = Math.max(1, Math.min(5, Number(input.concurrency ?? 2)));
 	const minUrgency = Math.max(1, Math.min(5, Number(input.minUrgency ?? 2)));
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") => {
+	function pushTrace(module: string, label: string, detail: string, status: TraceEvent["status"] = "ok") {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -30,7 +30,7 @@ export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status,
 		});
-	};
+	}
 
 	pushTrace("Stream", "Stream.fromIterable", `Queued ${sampleBatch.length} raw events (concurrency=${concurrency}, minUrgency=${minUrgency})`);
 
@@ -75,4 +75,4 @@ export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> =
 		},
 		trace,
 	}));
-};
+}

@@ -1,0 +1,33 @@
+id: hoist-ternary-sub-pipeline
+language: TypeScript
+severity: error
+message: "Hoist mapping operator out of conditional sub-pipeline."
+rewriters:
+    - id: from-pipe-typed
+      rule:
+          pattern: "$SRC.pipe(Effect.flatMap(($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed<$T>($FALSY)))"
+      fix: "$SRC.pipe(Effect.flatMap(($ARG) => ($COND ? $INNER : Effect.succeed(false))), Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY)))"
+    - id: from-pipe-untyped
+      rule:
+          pattern: "$SRC.pipe(Effect.flatMap(($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed($FALSY)))"
+      fix: "$SRC.pipe(Effect.flatMap(($ARG) => ($COND ? $INNER : Effect.succeed(false))), Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY)))"
+rule:
+    pattern: $MATCH
+    any:
+        - pattern: "$SRC.pipe(Effect.flatMap(($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed<$T>($FALSY)))"
+        - pattern: "$SRC.pipe(Effect.flatMap(($ARG) => $COND ? $INNER.pipe(Effect.map(($BOOL) => ($BOOL ? $TRUTHY : $FALSY))) : Effect.succeed($FALSY)))"
+    not:
+        inside:
+            stopBy: end
+            any:
+                - pattern: "Effect.flatMap($OUTER_EXPR, $OUTER_FN)"
+                - pattern: "Effect.map($OUTER_EXPR, $OUTER_FN)"
+                - pattern: "Effect.tap($OUTER_EXPR, $OUTER_FN)"
+transform:
+    FIXED:
+        rewrite:
+            source: $MATCH
+            rewriters:
+                - from-pipe-typed
+                - from-pipe-untyped
+fix: $FIXED

@@ -12,8 +12,8 @@ export class LedgerClock extends Context.Service<LedgerClock, { readonly nowIso:
 export class AuditLog extends Context.Service<AuditLog, { readonly record: (entry: string) => Effect.Effect<void> }>()("AuditLog") {}
 
 // 2. Pure pipeline program: Effect<{ id: string; entry: string }, never, LedgerClock | AuditLog>
-export const recordDispatch = (recipient: string, message: string) =>
-	pipe(
+export function recordDispatch(recipient: string, message: string) {
+	return pipe(
 		LedgerClock.use((clock) => clock.nowIso),
 		Effect.flatMap((timestamp) =>
 			pipe(
@@ -27,15 +27,16 @@ export const recordDispatch = (recipient: string, message: string) =>
 			),
 		),
 	);
+}
 
-export const runStage01 = (input: Stage01Input): Promise<StageExecutionResult> => {
+export function runStage01(input: Stage01Input): Promise<StageExecutionResult> {
 	const startedAt = performance.now();
 	const recipient = (input.recipient ?? "ops@acme.dev").trim() || "ops@acme.dev";
 	const message = (input.message ?? "Ledger booted cleanly").trim() || "Ledger booted cleanly";
 	const logs: Array<string> = [];
 	const trace: Array<TraceEvent> = [];
 
-	const pushTrace = (module: string, label: string, detail: string) => {
+	function pushTrace(module: string, label: string, detail: string) {
 		trace.push({
 			step: trace.length + 1,
 			module,
@@ -44,7 +45,7 @@ export const runStage01 = (input: Stage01Input): Promise<StageExecutionResult> =
 			elapsedMs: Number((performance.now() - startedAt).toFixed(2)),
 			status: "ok",
 		});
-	};
+	}
 
 	// 3. Provide implementations with Layer.succeed & Layer.mergeAll
 	const ClockLive = Layer.succeed(LedgerClock, {
@@ -84,4 +85,4 @@ export const runStage01 = (input: Stage01Input): Promise<StageExecutionResult> =
 			requirementsRemaining: "never",
 		},
 	}));
-};
+}

@@ -51,13 +51,13 @@ const TAB_INACTIVE = "text-slate-600 hover:text-slate-900";
 export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
 	const [copied, setCopied] = createSignal(false);
 
-	const handleCopy = () => {
+	function handleCopy() {
 		if (typeof navigator !== "undefined" && navigator.clipboard) {
 			navigator.clipboard.writeText(props.stage.code).catch(() => {});
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1600);
 		}
-	};
+	}
 
 	const codeLines = createMemo(() => props.stage.code.split("\n"));
 	const diffLines = createMemo(() => (props.previousStage && props.activeTab === "diff" ? computeLineDiff(props.previousStage.code, props.stage.code) : []));
