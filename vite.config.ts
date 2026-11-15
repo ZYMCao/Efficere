@@ -4,26 +4,43 @@ import path from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig(() => {
-  return {
-    plugins: [
-      solid({
-        start: true,
-        extensions: [".jsx", ".tsx"],
-        refresh: process.env.DISABLE_HMR !== "true",
-      }),
-      tailwindcss(),
-    ],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "."),
-      },
-    },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== "true",
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === "true" ? null : {},
-    },
-  };
+	return {
+		oxc: {
+			jsx: {
+				runtime: "automatic",
+				importSource: "@solidjs/web",
+			},
+		},
+		staged: {
+			"*": ["vp check --fix --no-error-on-unmatched-pattern"],
+		},
+		fmt: {
+			useTabs: true,
+			singleQuote: false,
+			trailingComma: "all",
+			printWidth: 220,
+			tabWidth: 4,
+			semi: true,
+			bracketSameLine: true,
+			htmlWhitespaceSensitivity: "ignore",
+			sortPackageJson: false,
+		},
+		plugins: [
+			solid({
+				start: true,
+				extensions: [".jsx", ".tsx"],
+				refresh: process.env.DISABLE_HMR !== "true",
+			}),
+			tailwindcss(),
+		],
+		resolve: {
+			alias: {
+				"@": path.resolve(__dirname, "."),
+			},
+		},
+		server: {
+			hmr: process.env.DISABLE_HMR !== "true",
+			watch: process.env.DISABLE_HMR === "true" ? null : {},
+		},
+	};
 });
