@@ -1,0 +1,6 @@
+{
+  "name": "EffectTS Progressive Workshop",
+  "description": "An interactive, pipeline-only progressive teaching session covering Effect, Layer, Option, Config, Schema, Match, Stream, HttpApi, PersistedQueue, and Cluster actors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
