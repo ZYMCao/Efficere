@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"prepare": "node_modules/.bin/vp config --no-agent && mkdir -p .vite-hooks && echo 'node_modules/.bin/vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint",
-		"dev": "tsx src/server.ts",
+		"dev": "node_modules/.bin/vp dev",
 		"build": "node_modules/.bin/vp build",
 		"preview": "node_modules/.bin/vp preview",
 		"lint": "node_modules/.bin/vp lint && node_modules/.bin/ast-grep scan --update-all && node_modules/.bin/vp fmt --fix"
