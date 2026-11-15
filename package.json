@@ -4,11 +4,11 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"prepare": "vp config --no-agent && mkdir -p .vite-hooks && echo 'vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint",
+		"prepare": "node_modules/.bin/vp config --no-agent && mkdir -p .vite-hooks && echo 'node_modules/.bin/vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint",
 		"dev": "tsx src/server.ts",
-		"build": "vp build",
-		"preview": "vp preview",
-		"lint": "vp lint && node_modules/.bin/ast-grep scan --update-all && vp fmt --fix"
+		"build": "node_modules/.bin/vp build",
+		"preview": "node_modules/.bin/vp preview",
+		"lint": "node_modules/.bin/vp lint && node_modules/.bin/ast-grep scan --update-all && node_modules/.bin/vp fmt --fix"
 	},
 	"dependencies": {
 		"@effect/platform-node": "~4",
