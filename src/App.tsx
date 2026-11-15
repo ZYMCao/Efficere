@@ -8,6 +8,7 @@ import {
   Switch,
 } from "solid-js";
 import type { JSX } from "@solidjs/web";
+import "./index.css";
 import { CURRICULUM_STAGES } from "./effect-curriculum/catalog";
 import type {
   StageExecutionResult,

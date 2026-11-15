@@ -7,6 +7,7 @@ export default defineConfig(() => {
   return {
     plugins: [
       solid({
+        start: true,
         extensions: ['.jsx', '.tsx'],
         refresh: process.env.DISABLE_HMR !== 'true',
       }),
