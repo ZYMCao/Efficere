@@ -21,9 +21,7 @@ export function StageSidebar(props: StageSidebarProps): JSX.Element {
     >
       <div>
         <div class="flex items-baseline justify-between gap-2 mb-2">
-          <h2 class="font-display text-sm font-semibold text-slate-900">
-            Progressive Path
-          </h2>
+          <h2 class="font-display text-sm font-semibold text-slate-900">Progressive Path</h2>
           <span class="text-xs text-slate-500 tabular-nums">
             {props.completedCount} / 8 verified
           </span>
@@ -56,12 +54,8 @@ export function StageSidebar(props: StageSidebarProps): JSX.Element {
         >
           <For each={props.stages}>
             {(stage) => {
-              const isSelected = createMemo(
-                () => stage.id === props.currentStageId
-              );
-              const isDone = createMemo(
-                () => Boolean(props.completedStages[stage.id])
-              );
+              const isSelected = createMemo(() => stage.id === props.currentStageId);
+              const isDone = createMemo(() => Boolean(props.completedStages[stage.id]));
 
               return (
                 <button

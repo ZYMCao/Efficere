@@ -1,29 +1,29 @@
-import solid from '@solidjs/vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
-import {defineConfig} from 'vite';
+import solid from "@solidjs/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import path from "path";
+import { defineConfig } from "vite";
 
 export default defineConfig(() => {
   return {
     plugins: [
       solid({
         start: true,
-        extensions: ['.jsx', '.tsx'],
-        refresh: process.env.DISABLE_HMR !== 'true',
+        extensions: [".jsx", ".tsx"],
+        refresh: process.env.DISABLE_HMR !== "true",
       }),
       tailwindcss(),
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        "@": path.resolve(__dirname, "."),
       },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+      hmr: process.env.DISABLE_HMR !== "true",
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      watch: process.env.DISABLE_HMR === "true" ? null : {},
     },
   };
 });

@@ -19,22 +19,14 @@ test("Strict Pipeline Rule: zero Effect.gen, function*, or yield* across all sta
   for (const file of stageFiles) {
     const content = fs.readFileSync(
       path.join(process.cwd(), "src/effect-curriculum/stages", file),
-      "utf8"
+      "utf8",
     );
-    assert.equal(
-      content.includes("Effect.gen"),
-      false,
-      `${file} must not use Effect.gen`
-    );
-    assert.equal(
-      content.includes("yield*"),
-      false,
-      `${file} must not use yield*`
-    );
+    assert.equal(content.includes("Effect.gen"), false, `${file} must not use Effect.gen`);
+    assert.equal(content.includes("yield*"), false, `${file} must not use yield*`);
     assert.equal(
       /function\s*\*/.test(content),
       false,
-      `${file} must not contain generator functions`
+      `${file} must not contain generator functions`,
     );
   }
 });
@@ -77,7 +69,7 @@ test("Stage 03: Config + Redacted + Schema validates valid input and rejects inv
   assert.equal(valid.ok, true);
   assert.equal(
     (valid.output as { tokenRedactedPreview: string }).tokenRedactedPreview,
-    "<redacted>"
+    "<redacted>",
   );
 
   const invalid = await runStageById("stage-03", {

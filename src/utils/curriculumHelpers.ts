@@ -7,16 +7,14 @@ export interface DiffLine {
 
 export function computeLineDiff(
   previousText: string,
-  currentText: string
+  currentText: string,
 ): ReadonlyArray<DiffLine> {
   const prevLines = previousText.split("\n");
   const currLines = currentText.split("\n");
 
   const n = prevLines.length;
   const m = currLines.length;
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array<number>(m + 1).fill(0)
-  );
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array<number>(m + 1).fill(0));
 
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
@@ -61,7 +59,7 @@ export function computeLineDiff(
 
 export function filterStagesByPrimitive(
   stages: ReadonlyArray<CurriculumStage>,
-  query: string
+  query: string,
 ): ReadonlyArray<CurriculumStage> {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return stages;
@@ -70,12 +68,12 @@ export function filterStagesByPrimitive(
       s.title.toLowerCase().includes(normalized) ||
       s.shortTitle.toLowerCase().includes(normalized) ||
       s.primitives.some((p) => p.toLowerCase().includes(normalized)) ||
-      s.summary.toLowerCase().includes(normalized)
+      s.summary.toLowerCase().includes(normalized),
   );
 }
 
 export function buildDefaultFieldValues(
-  stage: CurriculumStage
+  stage: CurriculumStage,
 ): Record<string, string | number | boolean> {
   const out: Record<string, string | number | boolean> = {};
   for (const field of stage.fields) {

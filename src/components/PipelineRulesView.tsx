@@ -10,9 +10,9 @@ export function PipelineRulesView(): JSX.Element {
           Pipeline-Only Discipline: Zero Generators, Zero Yields
         </h1>
         <p class="text-sm text-slate-600 mt-2 max-w-[70ch] leading-relaxed">
-          Every stage in this curriculum avoids Effect.gen and yield*. Pure pipelines
-          compose small combinators directly through pipe(...), preserving static
-          variance in Effect&lt;A, E, R&gt; and keeping control flow explicit.
+          Every stage in this curriculum avoids Effect.gen and yield*. Pure pipelines compose small
+          combinators directly through pipe(...), preserving static variance in Effect&lt;A, E,
+          R&gt; and keeping control flow explicit.
         </p>
       </div>
 
@@ -23,9 +23,7 @@ export function PipelineRulesView(): JSX.Element {
               <h2 class="font-display text-base font-semibold text-slate-900">
                 0{idx() + 1}. {rule.topic}
               </h2>
-              <p class="text-sm text-slate-600 mt-1.5 max-w-[70ch]">
-                {rule.explanation}
-              </p>
+              <p class="text-sm text-slate-600 mt-1.5 max-w-[70ch]">{rule.explanation}</p>
 
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
                 <div>

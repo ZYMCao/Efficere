@@ -12,7 +12,7 @@ export interface Stage08Input {
 // 1. Define Actor RPC protocol
 export class DailyLimitReached extends Schema.TaggedError<DailyLimitReached>()(
   "DailyLimitReached",
-  { tenantId: Schema.String, sentCount: Schema.Number }
+  { tenantId: Schema.String, sentCount: Schema.Number },
 ) {}
 
 export const DispatchRpc = Rpc.make("Dispatch", {
@@ -35,10 +35,7 @@ export const GetLedgerRpc = Rpc.make("GetLedger", {
 });
 
 // 2. Define Cluster Entity (Virtual Actor)
-export const TenantDispatcher = Entity.make("TenantDispatcher", [
-  DispatchRpc,
-  GetLedgerRpc,
-]);
+export const TenantDispatcher = Entity.make("TenantDispatcher", [DispatchRpc, GetLedgerRpc]);
 
 // 3. Implement Entity behavior as a Layer with isolated per-entity Ref state
 interface TenantState {
@@ -54,7 +51,7 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
       Ref.make<TenantState>({
         totalSent: 0,
         subjects: [],
-      })
+      }),
     ),
     Effect.map(({ address, stateRef }) =>
       TenantDispatcher.of({
@@ -63,7 +60,7 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
             Ref.modify(
               stateRef,
               (
-                state
+                state,
               ): readonly [
                 Effect.Effect<
                   {
@@ -82,7 +79,7 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
                       new DailyLimitReached({
                         tenantId: address.entityId,
                         sentCount: state.totalSent,
-                      })
+                      }),
                     ),
                     state,
                   ];
@@ -101,9 +98,9 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
                   }),
                   nextState,
                 ];
-              }
+              },
             ),
-            Effect.flatten
+            Effect.flatten,
           ),
         GetLedger: () =>
           pipe(
@@ -112,12 +109,12 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
               entityId: address.entityId,
               totalSent: state.totalSent,
               subjects: [...state.subjects],
-            }))
+            })),
           ),
-      })
-    )
+      }),
+    ),
   ),
-  { maxIdleTime: "5 minutes", concurrency: 1 }
+  { maxIdleTime: "5 minutes", concurrency: 1 },
 );
 
 export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> => {
@@ -131,7 +128,7 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -143,9 +140,7 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
     });
   };
 
-  const ClusterLayer = TenantDispatcherLive.pipe(
-    Layer.provideMerge(TestRunner.layer)
-  );
+  const ClusterLayer = TenantDispatcherLive.pipe(Layer.provideMerge(TestRunner.layer));
 
   // Pure pipeline: obtain sharded entity client -> send concurrent bursts -> read isolated actor state
   const program = pipe(
@@ -162,9 +157,9 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
               pushTrace(
                 "Cluster.Entity",
                 `${res.entityAddress}`,
-                `Seq=${res.sequenceNo} on shard=${res.shardId}: "${res.subject}"`
-              )
-            )
+                `Seq=${res.sequenceNo} on shard=${res.shardId}: "${res.subject}"`,
+              ),
+            ),
           ),
           Effect.catchTag("DailyLimitReached", (err) =>
             Effect.sync(() => {
@@ -172,12 +167,12 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
                 "Cluster.Entity",
                 `${err.tenantId} DailyLimitReached`,
                 `Actor rejected 4th message (cap=3) without corrupting state`,
-                "warn"
+                "warn",
               );
               return { rejected: true, tenantId: err.tenantId, cap: 3 };
-            })
-          )
-        )
+            }),
+          ),
+        ),
       );
 
       const globexCall = pipe(
@@ -187,24 +182,22 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
             pushTrace(
               "Cluster.Entity",
               `${res.entityAddress}`,
-              `Isolated actor Seq=${res.sequenceNo} on shard=${res.shardId}`
-            )
-          )
-        )
+              `Isolated actor Seq=${res.sequenceNo} on shard=${res.shardId}`,
+            ),
+          ),
+        ),
       );
 
       return pipe(
         Effect.Do,
-        Effect.bind("acmeDispatches", () =>
-          Effect.all(acmeCalls, { concurrency: "unbounded" })
-        ),
+        Effect.bind("acmeDispatches", () => Effect.all(acmeCalls, { concurrency: "unbounded" })),
         Effect.bind("globexDispatches", () => Effect.all([globexCall])),
         Effect.bind("acmeLedger", () => acmeClient.GetLedger()),
-        Effect.bind("globexLedger", () => globexClient.GetLedger())
+        Effect.bind("globexLedger", () => globexClient.GetLedger()),
       );
     }),
     Effect.scoped,
-    Effect.provide(ClusterLayer)
+    Effect.provide(ClusterLayer),
   );
 
   return Effect.runPromise(program).then((output) => ({
@@ -215,8 +208,10 @@ export const runStage08 = (input: Stage08Input): Promise<StageExecutionResult> =
     output,
     trace,
     stateSnapshot: {
-      runnerMode: "TestRunner.layer (swap for SingleRunner.layer + SqlClient or NodeClusterHttp in prod)",
-      actorGuarantees: "Single-writer serialized mailbox (concurrency=1), shard-routed by EntityId, automatic passivation",
+      runnerMode:
+        "TestRunner.layer (swap for SingleRunner.layer + SqlClient or NodeClusterHttp in prod)",
+      actorGuarantees:
+        "Single-writer serialized mailbox (concurrency=1), shard-routed by EntityId, automatic passivation",
     },
   }));
 };

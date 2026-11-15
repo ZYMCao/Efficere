@@ -48,15 +48,21 @@ export const computeRoutingPlan = Match.type<DispatchCommand>().pipe(
       slaMs: 1000,
       note: `Webhook configured for ${cmd.retries} retries`,
     }),
-  })
+  }),
 );
 
 // 3. Value-level Match with predicate guards
 export const classifyLatencyTier = (slaMs: number) =>
   Match.value(slaMs).pipe(
-    Match.when((ms) => ms <= 400, () => "realtime"),
-    Match.when((ms) => ms <= 1200, () => "standard"),
-    Match.orElse(() => "batch")
+    Match.when(
+      (ms) => ms <= 400,
+      () => "realtime",
+    ),
+    Match.when(
+      (ms) => ms <= 1200,
+      () => "standard",
+    ),
+    Match.orElse(() => "batch"),
   );
 
 export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> => {
@@ -70,7 +76,7 @@ export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -93,8 +99,8 @@ export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> =
     Schema.decodeUnknownEffect(DispatchCommandSchema)(rawCommand),
     Effect.tap((cmd) =>
       Effect.sync(() =>
-        pushTrace("Schema", "Decoded TaggedClass", `Matched union variant ${cmd._tag}`)
-      )
+        pushTrace("Schema", "Decoded TaggedClass", `Matched union variant ${cmd._tag}`),
+      ),
     ),
     Effect.map((cmd) => {
       const plan = computeRoutingPlan(cmd);
@@ -102,10 +108,10 @@ export const runStage04 = (input: Stage04Input): Promise<StageExecutionResult> =
       pushTrace(
         "Match",
         "Match.tagsExhaustive",
-        `Routed ${cmd._tag} -> ${plan.transport} (${tier} tier, ${plan.slaMs}ms SLA)`
+        `Routed ${cmd._tag} -> ${plan.transport} (${tier} tier, ${plan.slaMs}ms SLA)`,
       );
       return { variant: cmd._tag, tier, plan };
-    })
+    }),
   );
 
   return Effect.runPromiseExit(program).then((exit) => {

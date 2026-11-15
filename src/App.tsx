@@ -10,14 +10,8 @@ import {
 import type { JSX } from "@solidjs/web";
 import "./index.css";
 import { CURRICULUM_STAGES } from "./effect-curriculum/catalog";
-import type {
-  StageExecutionResult,
-  StageId,
-} from "./effect-curriculum/types";
-import {
-  buildDefaultFieldValues,
-  filterStagesByPrimitive,
-} from "./utils/curriculumHelpers";
+import type { StageExecutionResult, StageId } from "./effect-curriculum/types";
+import { buildDefaultFieldValues, filterStagesByPrimitive } from "./utils/curriculumHelpers";
 import { TopNav, type AppSection } from "./components/TopNav";
 import { SignalFlowDiagram } from "./components/SignalFlowDiagram";
 import { StageSidebar } from "./components/StageSidebar";
@@ -26,14 +20,8 @@ import { ExecutionDeck } from "./components/ExecutionDeck";
 import { PipelineRulesView } from "./components/PipelineRulesView";
 import { ArchitectureView } from "./components/ArchitectureView";
 
-function buildInitialInputs(): Record<
-  StageId,
-  Record<string, string | number | boolean>
-> {
-  const initial = {} as Record<
-    StageId,
-    Record<string, string | number | boolean>
-  >;
+function buildInitialInputs(): Record<StageId, Record<string, string | number | boolean>> {
+  const initial = {} as Record<StageId, Record<string, string | number | boolean>>;
   for (const s of CURRICULUM_STAGES) {
     initial[s.id] = buildDefaultFieldValues(s);
   }
@@ -41,38 +29,31 @@ function buildInitialInputs(): Record<
 }
 
 export default function App(): JSX.Element {
-  const [activeSection, setActiveSection] =
-    createSignal<AppSection>("curriculum");
+  const [activeSection, setActiveSection] = createSignal<AppSection>("curriculum");
   const [currentStageId, setCurrentStageId] = createSignal<StageId>("stage-01");
   const [codeTab, setCodeTab] = createSignal<CodeTabMode>("code");
   const [searchQuery, setSearchQuery] = createSignal("");
-  const [completedStages, setCompletedStages] = createStore<
-    Record<string, boolean>
-  >({});
+  const [completedStages, setCompletedStages] = createStore<Record<string, boolean>>({});
   const [inputsByStage, setInputsByStage] = createStore(buildInitialInputs());
   const [isRunning, setIsRunning] = createSignal(false);
   const [result, setResult] = createSignal<StageExecutionResult | null>(null);
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
 
   const currentIndex = createMemo(() =>
-    CURRICULUM_STAGES.findIndex((s) => s.id === currentStageId())
+    CURRICULUM_STAGES.findIndex((s) => s.id === currentStageId()),
   );
-  const currentStage = createMemo(
-    () => CURRICULUM_STAGES[currentIndex()] ?? CURRICULUM_STAGES[0]
-  );
+  const currentStage = createMemo(() => CURRICULUM_STAGES[currentIndex()] ?? CURRICULUM_STAGES[0]);
   const previousStage = createMemo(() =>
-    currentIndex() > 0 ? CURRICULUM_STAGES[currentIndex() - 1] : null
+    currentIndex() > 0 ? CURRICULUM_STAGES[currentIndex() - 1] : null,
   );
   const filteredStages = createMemo(() =>
-    filterStagesByPrimitive(CURRICULUM_STAGES, searchQuery())
+    filterStagesByPrimitive(CURRICULUM_STAGES, searchQuery()),
   );
-  const completedCount = createMemo(
-    () => Object.values(completedStages).filter(Boolean).length
-  );
+  const completedCount = createMemo(() => Object.values(completedStages).filter(Boolean).length);
 
   const executeStage = async (
     stageId: StageId,
-    payload: Record<string, string | number | boolean>
+    payload: Record<string, string | number | boolean>,
   ) => {
     setIsRunning(true);
     setErrorMessage(null);
@@ -91,9 +72,7 @@ export default function App(): JSX.Element {
         s[stageId] = true;
       });
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to run stage"
-      );
+      setErrorMessage(err instanceof Error ? err.message : "Failed to run stage");
     } finally {
       setIsRunning(false);
     }
@@ -113,10 +92,7 @@ export default function App(): JSX.Element {
     void executeStage(stageId, snapshot(inputsByStage[stageId]));
   };
 
-  const handleChangeField = (
-    key: string,
-    value: string | number | boolean
-  ) => {
+  const handleChangeField = (key: string, value: string | number | boolean) => {
     const stageId = currentStage().id;
     setInputsByStage((s) => {
       s[stageId][key] = value;
@@ -149,10 +125,7 @@ export default function App(): JSX.Element {
         onSelectSection={setActiveSection}
         onJumpToSandbox={handleJumpToSandbox}
         onRunCurrentStage={() =>
-          void executeStage(
-            currentStage().id,
-            snapshot(inputsByStage[currentStage().id])
-          )
+          void executeStage(currentStage().id, snapshot(inputsByStage[currentStage().id]))
         }
         isRunning={isRunning()}
       />
@@ -197,7 +170,7 @@ export default function App(): JSX.Element {
                     onRun={() =>
                       void executeStage(
                         currentStage().id,
-                        snapshot(inputsByStage[currentStage().id])
+                        snapshot(inputsByStage[currentStage().id]),
                       )
                     }
                     onReset={handleResetInputs}

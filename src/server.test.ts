@@ -7,10 +7,7 @@ import { HttpRouter, HttpServer } from "effect/http";
 import { ApiRoutesLayer } from "./server";
 
 test("src/server.ts uses Effect HTTP natively without Express or generators", () => {
-  const source = fs.readFileSync(
-    path.join(process.cwd(), "src/server.ts"),
-    "utf8"
-  );
+  const source = fs.readFileSync(path.join(process.cwd(), "src/server.ts"), "utf8");
   assert.equal(source.includes("express"), false);
   assert.equal(source.includes("Effect.gen"), false);
   assert.equal(source.includes("yield*"), false);
@@ -20,7 +17,7 @@ test("src/server.ts uses Effect HTTP natively without Express or generators", ()
 test("WorkshopApi serves /api/health, /api/stages/:id/run, and 404 on unknown stage", async () => {
   const { handler, dispose } = HttpRouter.toWebHandler(
     ApiRoutesLayer.pipe(Layer.provide(HttpServer.layerServices)),
-    { disableLogger: true }
+    { disableLogger: true },
   );
 
   try {
@@ -42,7 +39,7 @@ test("WorkshopApi serves /api/health, /api/stages/:id/run, and 404 on unknown st
           recipient: "ops@acme.dev",
           message: "Effect HTTP live",
         }),
-      })
+      }),
     );
     assert.equal(runRes.status, 200);
     const runBody = (await runRes.json()) as { ok: boolean; stageId: string };
@@ -54,7 +51,7 @@ test("WorkshopApi serves /api/health, /api/stages/:id/run, and 404 on unknown st
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({}),
-      })
+      }),
     );
     assert.equal(unknownRes.status, 404);
   } finally {

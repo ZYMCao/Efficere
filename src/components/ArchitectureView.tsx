@@ -53,9 +53,9 @@ export function ArchitectureView(props: ArchitectureViewProps): JSX.Element {
           Full-Stack EffectTS Architecture Map
         </h1>
         <p class="text-sm text-slate-600 mt-2 max-w-[70ch] leading-relaxed">
-          Because Effect separates program descriptions from Layer implementations, the
-          same pipeline code runs seamlessly in unit tests, single-node containers, and
-          multi-node Kubernetes clusters.
+          Because Effect separates program descriptions from Layer implementations, the same
+          pipeline code runs seamlessly in unit tests, single-node containers, and multi-node
+          Kubernetes clusters.
         </p>
       </div>
 
@@ -64,15 +64,9 @@ export function ArchitectureView(props: ArchitectureViewProps): JSX.Element {
           {(layer) => (
             <article class="bg-white border border-slate-200 rounded-xl p-6 flex flex-col justify-between gap-4">
               <div>
-                <h2 class="font-display text-base font-semibold text-slate-900">
-                  {layer.tier}
-                </h2>
-                <p class="text-xs font-mono text-sky-800 mt-1">
-                  {layer.modules}
-                </p>
-                <p class="text-sm text-slate-600 mt-3 leading-relaxed">
-                  {layer.summary}
-                </p>
+                <h2 class="font-display text-base font-semibold text-slate-900">{layer.tier}</h2>
+                <p class="text-xs font-mono text-sky-800 mt-1">{layer.modules}</p>
+                <p class="text-sm text-slate-600 mt-3 leading-relaxed">{layer.summary}</p>
 
                 <dl class="mt-4 space-y-2 text-xs border-t border-slate-100 pt-3">
                   <div>

@@ -24,10 +24,9 @@ export const DispatchItemSchema = Schema.Struct({
   status: Schema.Literals(["queued", "delivered"]),
 });
 
-export class DispatchNotFound extends Schema.TaggedError<DispatchNotFound>()(
-  "DispatchNotFound",
-  { id: Schema.String }
-) {}
+export class DispatchNotFound extends Schema.TaggedError<DispatchNotFound>()("DispatchNotFound", {
+  id: Schema.String,
+}) {}
 
 export const CreateDispatchPayload = Schema.Struct({
   recipient: Schema.NonEmptyString,
@@ -40,14 +39,14 @@ export const DispatchGroup = HttpApiGroup.make("dispatches")
     HttpApiEndpoint.post("create", "/dispatches", {
       payload: CreateDispatchPayload,
       success: DispatchItemSchema.pipe(HttpApiSchema.status(201)),
-    })
+    }),
   )
   .add(
     HttpApiEndpoint.get("getById", "/dispatches/:id", {
       params: { id: Schema.NonEmptyString },
       success: DispatchItemSchema,
       error: DispatchNotFound.pipe(HttpApiSchema.status(404)),
-    })
+    }),
   );
 
 export const LedgerApi = HttpApi.make("LedgerApi").add(DispatchGroup);
@@ -58,10 +57,10 @@ export class DispatchStore extends Context.Service<
   {
     readonly create: (
       recipient: string,
-      subject: string
+      subject: string,
     ) => Effect.Effect<typeof DispatchItemSchema.Type>;
     readonly findById: (
-      id: string
+      id: string,
     ) => Effect.Effect<typeof DispatchItemSchema.Type, DispatchNotFound>;
     readonly snapshot: Effect.Effect<ReadonlyArray<typeof DispatchItemSchema.Type>>;
   }
@@ -81,7 +80,7 @@ export const DispatchStoreLive = Layer.effect(
             status: "delivered",
           },
         ],
-      ])
+      ]),
     ),
     Effect.map((storeRef) => ({
       create: (recipient, subject) =>
@@ -97,57 +96,47 @@ export const DispatchStoreLive = Layer.effect(
             const next = new Map(map);
             next.set(id, item);
             return [item, next] as const;
-          })
+          }),
         ),
       findById: (id) =>
         pipe(
           Ref.get(storeRef),
           Effect.flatMap((map) => {
             const found = map.get(id);
-            return found
-              ? Effect.succeed(found)
-              : Effect.fail(new DispatchNotFound({ id }));
-          })
+            return found ? Effect.succeed(found) : Effect.fail(new DispatchNotFound({ id }));
+          }),
         ),
       snapshot: pipe(
         Ref.get(storeRef),
-        Effect.map((map) => Array.from(map.values()))
+        Effect.map((map) => Array.from(map.values())),
       ),
-    }))
-  )
+    })),
+  ),
 );
 
 // 4. Implement HttpApiGroup handlers via pure pipelines
-export const DispatchGroupLive = HttpApiBuilder.group(
-  LedgerApi,
-  "dispatches",
-  (handlers) =>
-    pipe(
-      DispatchStore,
-      Effect.map((store) =>
-        handlers
-          .handle("create", ({ payload }) =>
-            store.create(payload.recipient, payload.subject)
-          )
-          .handle("getById", ({ params }) => store.findById(params.id))
-      )
-    )
+export const DispatchGroupLive = HttpApiBuilder.group(LedgerApi, "dispatches", (handlers) =>
+  pipe(
+    DispatchStore,
+    Effect.map((store) =>
+      handlers
+        .handle("create", ({ payload }) => store.create(payload.recipient, payload.subject))
+        .handle("getById", ({ params }) => store.findById(params.id)),
+    ),
+  ),
 );
 
 // 5. Build Web-standard Request -> Response handler with HttpRouter.toWebHandler
 export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(
   Layer.provide(DispatchGroupLive),
   Layer.provide(DispatchStoreLive),
-  Layer.provide(HttpServer.layerServices)
+  Layer.provide(HttpServer.layerServices),
 );
 
 export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> => {
   const startedAt = performance.now();
   const method = input.method === "GET" ? "GET" : "POST";
-  const path =
-    method === "GET"
-      ? (input.path ?? "/dispatches/disp-101").trim()
-      : "/dispatches";
+  const path = method === "GET" ? (input.path ?? "/dispatches/disp-101").trim() : "/dispatches";
   const recipient = (input.recipient ?? "cto@acme.dev").trim();
   const subject = (input.subject ?? "Quarterly Audit Ready").trim();
   const trace: Array<TraceEvent> = [];
@@ -156,7 +145,7 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -171,7 +160,7 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
   pushTrace(
     "HttpApiBuilder",
     "HttpRouter.toWebHandler",
-    `Compiled LedgerApi routes and OpenAPI metadata`
+    `Compiled LedgerApi routes and OpenAPI metadata`,
   );
 
   const webApp = HttpRouter.toWebHandler(ApiLayer, { disableLogger: true });
@@ -185,7 +174,11 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
         })
       : new Request(`http://localhost${path}`, { method: "GET" });
 
-  pushTrace("HttpServerRequest", `${method} ${path}`, "Dispatched Web Request into Effect HttpRouter");
+  pushTrace(
+    "HttpServerRequest",
+    `${method} ${path}`,
+    "Dispatched Web Request into Effect HttpRouter",
+  );
 
   const runEffect = Effect.acquireUseRelease(
     Effect.succeed(webApp),
@@ -207,11 +200,11 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
                 headers: Object.fromEntries(response.headers.entries()),
                 body: parsedBody,
               };
-            })
-          )
-        )
+            }),
+          ),
+        ),
       ),
-    ({ dispose }) => Effect.promise(() => dispose())
+    ({ dispose }) => Effect.promise(() => dispose()),
   );
 
   return Effect.runPromise(runEffect).then((httpRes) => {
@@ -222,7 +215,7 @@ export const runStage06 = (input: Stage06Input): Promise<StageExecutionResult> =
       isOk
         ? "Schema-encoded response returned cleanly"
         : `Mapped typed error / schema rejection to HTTP ${httpRes.httpStatus}`,
-      isOk ? "ok" : "error"
+      isOk ? "ok" : "error",
     );
 
     return {

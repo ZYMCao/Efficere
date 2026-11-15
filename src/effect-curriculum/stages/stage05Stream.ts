@@ -25,7 +25,7 @@ export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -40,21 +40,20 @@ export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> =
   pushTrace(
     "Stream",
     "Stream.fromIterable",
-    `Queued ${sampleBatch.length} raw events (concurrency=${concurrency}, minUrgency=${minUrgency})`
+    `Queued ${sampleBatch.length} raw events (concurrency=${concurrency}, minUrgency=${minUrgency})`,
   );
 
   // Pure pipeline Stream: decode -> filter -> concurrent mapEffect -> runCollect
   const pipeline = pipe(
     Stream.fromIterable(sampleBatch),
-    Stream.mapEffect(
-      (raw) => Schema.decodeUnknownEffect(DispatchCommandSchema)(raw),
-      { concurrency }
-    ),
+    Stream.mapEffect((raw) => Schema.decodeUnknownEffect(DispatchCommandSchema)(raw), {
+      concurrency,
+    }),
     Stream.filter((cmd) =>
       Match.value(cmd).pipe(
         Match.tag("SendEmail", (email) => email.urgency >= minUrgency),
-        Match.orElse(() => true)
-      )
+        Match.orElse(() => true),
+      ),
     ),
     Stream.mapEffect(
       (cmd) =>
@@ -65,14 +64,14 @@ export const runStage05 = (input: Stage05Input): Promise<StageExecutionResult> =
             pushTrace(
               "Stream.mapEffect",
               `Processed ${cmd._tag}`,
-              `-> ${plan.transport} (${plan.target})`
+              `-> ${plan.transport} (${plan.target})`,
             );
             return { tag: cmd._tag, ...plan };
-          })
+          }),
         ),
-      { concurrency }
+      { concurrency },
     ),
-    Stream.runCollect
+    Stream.runCollect,
   );
 
   return Effect.runPromise(pipeline).then((processed) => ({

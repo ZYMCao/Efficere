@@ -1,8 +1,6 @@
 import { HydrationScript, type JSX } from "@solidjs/web";
 
-export default function Document(props: {
-  children?: JSX.Element;
-}): JSX.Element {
+export default function Document(props: { children?: JSX.Element }): JSX.Element {
   return (
     <html lang="en">
       <head>
@@ -21,11 +19,7 @@ export default function Document(props: {
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin="anonymous"
-        />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
           rel="stylesheet"

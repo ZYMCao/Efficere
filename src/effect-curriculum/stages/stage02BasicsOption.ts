@@ -9,13 +9,14 @@ export interface Stage02Input {
 // 1. Schema-backed typed domain errors (no throw, no untyped catch)
 export class RecipientNotFound extends Schema.TaggedError<RecipientNotFound>()(
   "RecipientNotFound",
-  { recipientId: Schema.String }
+  { recipientId: Schema.String },
 ) {}
 
-export class QuotaExceeded extends Schema.TaggedError<QuotaExceeded>()(
-  "QuotaExceeded",
-  { recipientId: Schema.String, requested: Schema.Number, remaining: Schema.Number }
-) {}
+export class QuotaExceeded extends Schema.TaggedError<QuotaExceeded>()("QuotaExceeded", {
+  recipientId: Schema.String,
+  requested: Schema.Number,
+  remaining: Schema.Number,
+}) {}
 
 export interface RecipientRecord {
   readonly id: string;
@@ -34,17 +35,15 @@ export class RecipientRepo extends Context.Service<
 export const prepareDispatch = (recipientId: string, costUnits: number) =>
   pipe(
     Effect.Do,
-    Effect.bind("maybeRecipient", () =>
-      RecipientRepo.use((repo) => repo.findById(recipientId))
-    ),
+    Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
     Effect.bind("recipient", ({ maybeRecipient }) =>
       pipe(
         maybeRecipient,
         Option.match({
           onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
           onSome: Effect.succeed,
-        })
-      )
+        }),
+      ),
     ),
     Effect.flatMap(({ recipient }) =>
       recipient.remainingQuota < costUnits
@@ -53,15 +52,15 @@ export const prepareDispatch = (recipientId: string, costUnits: number) =>
               recipientId: recipient.id,
               requested: costUnits,
               remaining: recipient.remainingQuota,
-            })
+            }),
           )
         : Effect.succeed({
             recipientId: recipient.id,
             email: recipient.email,
             reservedUnits: costUnits,
             remainingAfter: recipient.remainingQuota - costUnits,
-          })
-    )
+          }),
+    ),
   );
 
 export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> => {
@@ -79,7 +78,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -101,7 +100,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
           Option.isSome(found)
             ? `Some(${found.value.email}, quota=${found.value.remainingQuota})`
             : `None() for "${id}"`,
-          Option.isSome(found) ? "ok" : "warn"
+          Option.isSome(found) ? "ok" : "warn",
         );
         return found;
       }),
@@ -112,8 +111,12 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
     prepareDispatch(recipientId, costUnits),
     Effect.tap((ok) =>
       Effect.sync(() =>
-        pushTrace("Effect", "prepareDispatch", `Reserved ${ok.reservedUnits} units for ${ok.email}`)
-      )
+        pushTrace(
+          "Effect",
+          "prepareDispatch",
+          `Reserved ${ok.reservedUnits} units for ${ok.email}`,
+        ),
+      ),
     ),
     Effect.catchTag("QuotaExceeded", (err) =>
       Effect.sync(() => {
@@ -121,7 +124,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
           "Effect.catchTag",
           "Recovered QuotaExceeded",
           `Requested ${err.requested} > remaining ${err.remaining}; downgraded to 1 unit`,
-          "warn"
+          "warn",
         );
         return {
           recipientId: err.recipientId,
@@ -130,9 +133,9 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
           remainingAfter: Math.max(0, err.remaining - 1),
           recoveredFrom: "QuotaExceeded" as const,
         };
-      })
+      }),
     ),
-    Effect.provide(RepoLive)
+    Effect.provide(RepoLive),
   );
 
   return Effect.runPromiseExit(programWithRecovery).then((exit) => {
@@ -155,7 +158,7 @@ export const runStage02 = (input: Stage02Input): Promise<StageExecutionResult> =
       "Exit",
       "Unhandled Typed Failure",
       `Pipeline exited in E channel: ${String(exit.cause)}`,
-      "error"
+      "error",
     );
 
     return {

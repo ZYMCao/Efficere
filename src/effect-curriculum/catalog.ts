@@ -165,7 +165,13 @@ const resilientDispatch = pipe(
     number: "03",
     title: "Config & Schema Validation",
     shortTitle: "Config & Schema",
-    primitives: ["Config", "ConfigProvider", "Redacted", "Schema.Struct", "Schema.decodeUnknownEffect"],
+    primitives: [
+      "Config",
+      "ConfigProvider",
+      "Redacted",
+      "Schema.Struct",
+      "Schema.decodeUnknownEffect",
+    ],
     activeNodes: ["effect", "layer", "config", "schema"],
     summary:
       "Load environment settings declaratively with Config + Redacted inside Layer.effect, and parse untrusted external payloads through Effect Schema.",
@@ -243,7 +249,13 @@ export const validateAndAttachConfig = (rawPayload: unknown) =>
     number: "04",
     title: "Pattern Matching & Tagged Unions",
     shortTitle: "Pattern Match",
-    primitives: ["Schema.TaggedClass", "Schema.Union", "Match.type", "Match.tagsExhaustive", "Match.value"],
+    primitives: [
+      "Schema.TaggedClass",
+      "Schema.Union",
+      "Match.type",
+      "Match.tagsExhaustive",
+      "Match.value",
+    ],
     activeNodes: ["effect", "schema", "match"],
     summary:
       "Model domain commands as Schema.TaggedClass discriminated unions and route every variant with compiler-enforced Match.tagsExhaustive.",
@@ -381,7 +393,13 @@ export const processDispatchBatch = (
     number: "06",
     title: "HttpApi & HttpServer Semantics",
     shortTitle: "HttpApi & Server",
-    primitives: ["HttpApi", "HttpApiGroup", "HttpApiEndpoint", "HttpApiBuilder", "HttpRouter.toWebHandler"],
+    primitives: [
+      "HttpApi",
+      "HttpApiGroup",
+      "HttpApiEndpoint",
+      "HttpApiBuilder",
+      "HttpRouter.toWebHandler",
+    ],
     activeNodes: ["effect", "layer", "schema", "httpapi"],
     summary:
       "Define contract-first HTTP endpoints with typed params, payloads, and error status codes using HttpApi, then bind handlers with HttpApiBuilder.",
@@ -469,7 +487,13 @@ export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(
     number: "07",
     title: "PersistedQueue & Durable Retries",
     shortTitle: "PersistedQueue",
-    primitives: ["PersistedQueue.make", "queue.offer", "queue.take", "Schedule.spaced", "layerStoreMemory"],
+    primitives: [
+      "PersistedQueue.make",
+      "queue.offer",
+      "queue.take",
+      "Schedule.spaced",
+      "layerStoreMemory",
+    ],
     activeNodes: ["effect", "layer", "schema", "httpapi", "queue"],
     summary:
       "Decouple HTTP ingestion from unreliable downstream delivery using PersistedQueue for idempotent deduplication, scoped acknowledgements, and Schedule-driven retries.",
@@ -548,7 +572,13 @@ export const durableDispatchFlow = (idempotencyKey: string, recipient: string) =
     number: "08",
     title: "Cluster & Actor Model Semantics",
     shortTitle: "Cluster Actors",
-    primitives: ["Entity.make", "Rpc.make", "Entity.toLayer", "Entity.CurrentAddress", "TestRunner.layer"],
+    primitives: [
+      "Entity.make",
+      "Rpc.make",
+      "Entity.toLayer",
+      "Entity.CurrentAddress",
+      "TestRunner.layer",
+    ],
     activeNodes: ["effect", "layer", "schema", "httpapi", "queue", "cluster"],
     summary:
       "Model stateful per-tenant dispatchers as location-transparent Virtual Actors with serialized mailboxes, shard routing, and automatic idle passivation.",

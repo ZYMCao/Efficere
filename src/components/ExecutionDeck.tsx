@@ -1,16 +1,7 @@
 import { createMemo, For, Match, Show, Switch } from "solid-js";
 import type { JSX } from "@solidjs/web";
-import type {
-  CurriculumStage,
-  StageExecutionResult,
-} from "../effect-curriculum/types";
-import {
-  AlertTriangleIcon,
-  CheckCircleIcon,
-  PlayIcon,
-  RotateCcwIcon,
-  XCircleIcon,
-} from "./Icons";
+import type { CurriculumStage, StageExecutionResult } from "../effect-curriculum/types";
+import { AlertTriangleIcon, CheckCircleIcon, PlayIcon, RotateCcwIcon, XCircleIcon } from "./Icons";
 
 interface ExecutionDeckProps {
   readonly stage: CurriculumStage;
@@ -25,7 +16,7 @@ interface ExecutionDeckProps {
 
 export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
   const matchedResult = createMemo(() =>
-    props.result && props.result.stageId === props.stage.id ? props.result : null
+    props.result && props.result.stageId === props.stage.id ? props.result : null,
   );
 
   return (
@@ -36,9 +27,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
     >
       <div>
         <div class="flex items-baseline justify-between gap-2">
-          <h2 class="font-display text-sm font-semibold text-slate-900">
-            Live Runtime Sandbox
-          </h2>
+          <h2 class="font-display text-sm font-semibold text-slate-900">Live Runtime Sandbox</h2>
           <span class="text-xs text-slate-500">Effect v4 Server</span>
         </div>
         <p class="text-xs text-slate-500 mt-1">
@@ -56,18 +45,13 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
         <For each={props.stage.fields}>
           {(field) => {
             const inputId = createMemo(() => `field-${props.stage.id}-${field.key}`);
-            const fieldValue = createMemo(
-              () => props.values[field.key] ?? field.defaultValue
-            );
+            const fieldValue = createMemo(() => props.values[field.key] ?? field.defaultValue);
 
             return (
               <Switch
                 fallback={
                   <div class="flex flex-col gap-1">
-                    <label
-                      for={inputId()}
-                      class="text-xs font-medium text-slate-700"
-                    >
+                    <label for={inputId()} class="text-xs font-medium text-slate-700">
                       {field.label}
                     </label>
                     <input
@@ -81,15 +65,13 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
                             ? e.currentTarget.value === ""
                               ? ""
                               : Number(e.currentTarget.value)
-                            : e.currentTarget.value
+                            : e.currentTarget.value,
                         )
                       }
                       class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white"
                     />
                     <Show when={field.hint}>
-                      {(hint) => (
-                        <span class="text-[11px] text-slate-500">{hint()}</span>
-                      )}
+                      {(hint) => <span class="text-[11px] text-slate-500">{hint()}</span>}
                     </Show>
                   </div>
                 }
@@ -100,9 +82,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
                       id={inputId()}
                       type="checkbox"
                       checked={Boolean(fieldValue())}
-                      onChange={(e) =>
-                        props.onChangeValue(field.key, e.currentTarget.checked)
-                      }
+                      onChange={(e) => props.onChangeValue(field.key, e.currentTarget.checked)}
                       class="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-600 cursor-pointer"
                     />
                     <div class="flex flex-col">
@@ -113,9 +93,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
                         {field.label}
                       </label>
                       <Show when={field.hint}>
-                        {(hint) => (
-                          <span class="text-[11px] text-slate-500">{hint()}</span>
-                        )}
+                        {(hint) => <span class="text-[11px] text-slate-500">{hint()}</span>}
                       </Show>
                     </div>
                   </div>
@@ -124,35 +102,25 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
                 <Match when={field.type === "select" ? field.options : null}>
                   {(options) => (
                     <div class="flex flex-col gap-1">
-                      <label
-                        for={inputId()}
-                        class="text-xs font-medium text-slate-700"
-                      >
+                      <label for={inputId()} class="text-xs font-medium text-slate-700">
                         {field.label}
                       </label>
                       <select
                         id={inputId()}
                         value={String(fieldValue())}
-                        onChange={(e) =>
-                          props.onChangeValue(field.key, e.currentTarget.value)
-                        }
+                        onChange={(e) => props.onChangeValue(field.key, e.currentTarget.value)}
                         class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white"
                       >
                         <For each={options()}>
                           {(opt) => (
-                            <option
-                              value={opt.value}
-                              selected={String(fieldValue()) === opt.value}
-                            >
+                            <option value={opt.value} selected={String(fieldValue()) === opt.value}>
                               {opt.label}
                             </option>
                           )}
                         </For>
                       </select>
                       <Show when={field.hint}>
-                        {(hint) => (
-                          <span class="text-[11px] text-slate-500">{hint()}</span>
-                        )}
+                        {(hint) => <span class="text-[11px] text-slate-500">{hint()}</span>}
                       </Show>
                     </div>
                   )}
@@ -169,9 +137,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
             class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-sky-700 hover:bg-sky-800 disabled:opacity-60 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
           >
             <PlayIcon class="w-3.5 h-3.5" />
-            <span>
-              {props.isRunning ? "Executing..." : `Execute Stage ${props.stage.number}`}
-            </span>
+            <span>{props.isRunning ? "Executing..." : `Execute Stage ${props.stage.number}`}</span>
           </button>
           <button
             type="button"
@@ -199,7 +165,8 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
 
       <Show when={!props.result && !props.errorMessage}>
         <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
-          Run Stage {props.stage.number} to inspect live fiber steps, typed exits, and state snapshots.
+          Run Stage {props.stage.number} to inspect live fiber steps, typed exits, and state
+          snapshots.
         </div>
       </Show>
 
@@ -230,9 +197,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
             </div>
 
             <div>
-              <h3 class="text-xs font-semibold text-slate-800 mb-2">
-                Execution Trace
-              </h3>
+              <h3 class="text-xs font-semibold text-slate-800 mb-2">Execution Trace</h3>
               <div class="border border-slate-200 rounded-lg overflow-hidden">
                 <table class="w-full text-left border-collapse text-xs">
                   <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500">
@@ -261,14 +226,10 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
                                 <span class="text-emerald-700">STATUS: OK</span>
                               </Show>
                               <Show when={item().status === "warn"}>
-                                <span class="text-amber-700">
-                                  STATUS: RECOVERED / RETRY
-                                </span>
+                                <span class="text-amber-700">STATUS: RECOVERED / RETRY</span>
                               </Show>
                               <Show when={item().status === "error"}>
-                                <span class="text-rose-700">
-                                  STATUS: TYPED FAILURE
-                                </span>
+                                <span class="text-rose-700">STATUS: TYPED FAILURE</span>
                               </Show>
                             </div>
                           </td>
@@ -284,9 +245,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
             </div>
 
             <div>
-              <h3 class="text-xs font-semibold text-slate-800 mb-1.5">
-                Materialized Output
-              </h3>
+              <h3 class="text-xs font-semibold text-slate-800 mb-1.5">Materialized Output</h3>
               <pre class="bg-slate-950 text-slate-100 p-3 rounded-lg text-[11px] leading-5 font-mono overflow-x-auto max-h-64">
                 {JSON.stringify(res().output, null, 2)}
               </pre>

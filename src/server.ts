@@ -28,7 +28,7 @@ export const StageIdSchema = Schema.Literals([
 
 export class UnknownStageError extends Schema.TaggedError<UnknownStageError>()(
   "UnknownStageError",
-  { stageId: Schema.String }
+  { stageId: Schema.String },
 ) {}
 
 export const TraceEventSchema = Schema.Struct({
@@ -43,11 +43,7 @@ export const TraceEventSchema = Schema.Struct({
 export const StageExecutionResultSchema = Schema.Struct({
   stageId: StageIdSchema,
   ok: Schema.Boolean,
-  statusLabel: Schema.Literals([
-    "COMPLETED",
-    "TYPED_ERROR",
-    "VALIDATION_FAILED",
-  ]),
+  statusLabel: Schema.Literals(["COMPLETED", "TYPED_ERROR", "VALIDATION_FAILED"]),
   durationMs: Schema.Number,
   output: Schema.Unknown,
   errorTag: Schema.optional(Schema.String),
@@ -65,7 +61,7 @@ export const WorkshopGroup = HttpApiGroup.make("workshop")
   .add(
     HttpApiEndpoint.get("health", "/api/health", {
       success: HealthResponseSchema,
-    })
+    }),
   )
   .add(
     HttpApiEndpoint.post("runStage", "/api/stages/:id/run", {
@@ -73,52 +69,48 @@ export const WorkshopGroup = HttpApiGroup.make("workshop")
       payload: Schema.Record(Schema.String, Schema.Unknown),
       success: StageExecutionResultSchema,
       error: UnknownStageError.pipe(HttpApiSchema.status(404)),
-    })
+    }),
   );
 
 export const WorkshopApi = HttpApi.make("WorkshopApi").add(WorkshopGroup);
 
-export const WorkshopGroupLive = HttpApiBuilder.group(
-  WorkshopApi,
-  "workshop",
-  (handlers) =>
-    handlers
-      .handle("health", () =>
-        Effect.succeed({
-          ok: true,
-          runtime: "effect@4.1.4",
-          http: "effect/http-api + @effect/platform-node",
-        })
-      )
-      .handle("runStage", ({ params, payload }) =>
-        pipe(
-          Schema.decodeUnknownEffect(StageIdSchema)(params.id),
-          Effect.mapError(() => new UnknownStageError({ stageId: params.id })),
-          Effect.flatMap((stageId) =>
-            pipe(
-              Effect.tryPromise({
-                try: () => runStageById(stageId, payload),
-                catch: (error): StageExecutionResult => ({
-                  stageId,
-                  ok: false,
-                  statusLabel: "TYPED_ERROR",
-                  durationMs: 0,
-                  output: {
-                    message:
-                      error instanceof Error ? error.message : String(error),
-                  },
-                  trace: [],
-                }),
+export const WorkshopGroupLive = HttpApiBuilder.group(WorkshopApi, "workshop", (handlers) =>
+  handlers
+    .handle("health", () =>
+      Effect.succeed({
+        ok: true,
+        runtime: "effect@4.1.4",
+        http: "effect/http-api + @effect/platform-node",
+      }),
+    )
+    .handle("runStage", ({ params, payload }) =>
+      pipe(
+        Schema.decodeUnknownEffect(StageIdSchema)(params.id),
+        Effect.mapError(() => new UnknownStageError({ stageId: params.id })),
+        Effect.flatMap((stageId) =>
+          pipe(
+            Effect.tryPromise({
+              try: () => runStageById(stageId, payload),
+              catch: (error): StageExecutionResult => ({
+                stageId,
+                ok: false,
+                statusLabel: "TYPED_ERROR",
+                durationMs: 0,
+                output: {
+                  message: error instanceof Error ? error.message : String(error),
+                },
+                trace: [],
               }),
-              Effect.catch(Effect.succeed)
-            )
-          )
-        )
-      )
+            }),
+            Effect.catch(Effect.succeed),
+          ),
+        ),
+      ),
+    ),
 );
 
 export const ApiRoutesLayer = HttpApiBuilder.layer(WorkshopApi).pipe(
-  Layer.provide(WorkshopGroupLive)
+  Layer.provide(WorkshopGroupLive),
 );
 
 const ServerConfig = Config.all({
@@ -136,9 +128,9 @@ const runDevServer = (port: number) =>
               createViteServer({
                 server: { middlewareMode: true },
                 appType: "custom",
-              })
+              }),
             ),
-            (vite) => Effect.promise(() => vite.close())
+            (vite) => Effect.promise(() => vite.close()),
           ),
           apiEffect: HttpRouter.toHttpEffect(ApiRoutesLayer),
         }),
@@ -165,19 +157,19 @@ const runDevServer = (port: number) =>
                 (nodeServer) =>
                   Effect.callback<void>((resume) => {
                     nodeServer.close(() => resume(Effect.void));
-                  })
-              )
-            )
-          )
+                  }),
+              ),
+            ),
+          ),
         ),
         Effect.tap(() =>
           Effect.logInfo(
-            `EffectTS Workshop (dev + Vite middleware + HttpApi) listening on http://localhost:${port}`
-          )
+            `EffectTS Workshop (dev + Vite middleware + HttpApi) listening on http://localhost:${port}`,
+          ),
         ),
-        Effect.andThen(Effect.never)
-      )
-    ).pipe(Effect.provide(NodeHttpServer.layerHttpServices))
+        Effect.andThen(Effect.never),
+      ),
+    ).pipe(Effect.provide(NodeHttpServer.layerHttpServices)),
   );
 
 const runProdServer = (port: number) =>
@@ -187,23 +179,22 @@ const runProdServer = (port: number) =>
       HttpStaticServer.layer({
         root: path.resolve(process.cwd(), "dist/client"),
         spa: true,
-      })
+      }),
     ),
     HttpRouter.serve,
     Layer.provide(NodeHttpServer.layer(createServer, { host: "0.0.0.0", port })),
-    Layer.launch
+    Layer.launch,
   );
 
 const main = pipe(
   ServerConfig,
   Effect.flatMap(({ port, nodeEnv }) =>
-    nodeEnv === "production" ? runProdServer(port) : runDevServer(port)
-  )
+    nodeEnv === "production" ? runProdServer(port) : runDevServer(port),
+  ),
 );
 
 const isDirectEntry =
-  process.argv[1] !== undefined &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isDirectEntry) {
   NodeRuntime.runMain(main);

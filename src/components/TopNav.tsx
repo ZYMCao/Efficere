@@ -32,10 +32,7 @@ export function TopNav(props: TopNavProps): JSX.Element {
           EffectTS Workshop
         </a>
 
-        <nav
-          aria-label="Primary navigation"
-          class="hidden md:flex items-center gap-6"
-        >
+        <nav aria-label="Primary navigation" class="hidden md:flex items-center gap-6">
           <button
             type="button"
             onClick={() => props.onSelectSection("curriculum")}

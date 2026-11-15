@@ -16,7 +16,7 @@ export const QueuedDispatchSchema = Schema.Struct({
 
 export class TransientSmtpError extends Schema.TaggedError<TransientSmtpError>()(
   "TransientSmtpError",
-  { attempt: Schema.Number, reason: Schema.String }
+  { attempt: Schema.Number, reason: Schema.String },
 ) {}
 
 export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> => {
@@ -31,7 +31,7 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -53,31 +53,31 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
         schema: QueuedDispatchSchema,
         maxAttempts: 3,
         retrySchedule: Schedule.spaced("20 millis"),
-      })
+      }),
     ),
     Effect.bind("firstOfferId", ({ queue }) =>
       pipe(
         queue.offer(
           { recipient, subject: "Invoice #9042 Ready" },
-          { id: idempotencyKey, deduplicate: "untilRemoved" }
+          { id: idempotencyKey, deduplicate: "untilRemoved" },
         ),
         Effect.tap((id) =>
           Effect.sync(() =>
             pushTrace(
               "PersistedQueue",
               "queue.offer (primary)",
-              `Enqueued id="${id}" with deduplicate="untilRemoved"`
-            )
-          )
-        )
-      )
+              `Enqueued id="${id}" with deduplicate="untilRemoved"`,
+            ),
+          ),
+        ),
+      ),
     ),
     Effect.bind("duplicateOfferId", ({ queue }) =>
       sendDuplicateOffer
         ? pipe(
             queue.offer(
               { recipient, subject: "Invoice #9042 Duplicate" },
-              { id: idempotencyKey, deduplicate: "untilRemoved" }
+              { id: idempotencyKey, deduplicate: "untilRemoved" },
             ),
             Effect.tap((id) =>
               Effect.sync(() =>
@@ -85,39 +85,36 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
                   "PersistedQueue",
                   "queue.offer (duplicate)",
                   `Deduplicated offer id="${id}" — ignored by store`,
-                  "warn"
-                )
-              )
-            )
+                  "warn",
+                ),
+              ),
+            ),
           )
-        : Effect.succeed<string | null>(null)
+        : Effect.succeed<string | null>(null),
     ),
     Effect.bind("workerOutcome", ({ queue, attemptLog }) => {
       const takeOnce = queue.take((item, metadata) =>
         pipe(
-          Ref.update(attemptLog, (xs) => [
-            ...xs,
-            `attempt=${metadata.attempts} id=${metadata.id}`,
-          ]),
+          Ref.update(attemptLog, (xs) => [...xs, `attempt=${metadata.attempts} id=${metadata.id}`]),
           Effect.flatMap(() => {
             if (failFirstAttempt && metadata.attempts === 1) {
               pushTrace(
                 "PersistedQueue.take",
                 `Attempt #${metadata.attempts} failed`,
                 `TransientSmtpError -> PersistedQueue schedules automatic retry`,
-                "warn"
+                "warn",
               );
               return Effect.fail(
                 new TransientSmtpError({
                   attempt: metadata.attempts,
                   reason: "Upstream SMTP 421 busy",
-                })
+                }),
               );
             }
             pushTrace(
               "PersistedQueue.take",
               `Attempt #${metadata.attempts} acknowledged`,
-              `Delivered "${item.subject}" to ${item.recipient}`
+              `Delivered "${item.subject}" to ${item.recipient}`,
             );
             return Effect.succeed({
               deliveredId: metadata.id,
@@ -125,14 +122,14 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
               recipient: item.recipient,
               subject: item.subject,
             });
-          })
-        )
+          }),
+        ),
       );
 
       // Retry outer worker loop when attempt 1 fails so we observe attempt 2 from the store
       return pipe(
         takeOnce,
-        Effect.catchTag("TransientSmtpError", () => takeOnce)
+        Effect.catchTag("TransientSmtpError", () => takeOnce),
       );
     }),
     Effect.bind("attemptsRecorded", ({ attemptLog }) => Ref.get(attemptLog)),
@@ -143,9 +140,7 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
       workerOutcome,
       attemptsRecorded,
     })),
-    Effect.provide(
-      PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))
-    )
+    Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))),
   );
 
   return Effect.runPromise(program).then((output) => ({
@@ -156,7 +151,8 @@ export const runStage07 = (input: Stage07Input): Promise<StageExecutionResult> =
     output,
     trace,
     stateSnapshot: {
-      storeBackend: "PersistedQueue.layerStoreMemory (swap for layerStoreSql / layerStoreRedis in prod)",
+      storeBackend:
+        "PersistedQueue.layerStoreMemory (swap for layerStoreSql / layerStoreRedis in prod)",
       deliveryGuarantee: "At-least-once with scoped acknowledgement & idempotency keys",
     },
   }));

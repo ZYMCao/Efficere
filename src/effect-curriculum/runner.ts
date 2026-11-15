@@ -10,7 +10,7 @@ import { runStage08 } from "./stages/stage08Cluster";
 
 export const runStageById = (
   stageId: StageId,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
 ): Promise<StageExecutionResult> => {
   switch (stageId) {
     case "stage-01":

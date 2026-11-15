@@ -49,7 +49,7 @@ export function SignalFlowDiagram(props: SignalFlowDiagramProps): JSX.Element {
             const isActive = createMemo(
               () =>
                 props.activeNodes.includes(node.id) ||
-                (node.id === "config" && props.activeNodes.includes("schema"))
+                (node.id === "config" && props.activeNodes.includes("schema")),
             );
 
             return (
@@ -69,9 +69,7 @@ export function SignalFlowDiagram(props: SignalFlowDiagramProps): JSX.Element {
                     },
                   ]}
                 >
-                  <div class="text-xs font-semibold whitespace-nowrap truncate">
-                    {node.label}
-                  </div>
+                  <div class="text-xs font-semibold whitespace-nowrap truncate">{node.label}</div>
                   <div
                     class={[
                       "text-[11px] whitespace-nowrap truncate",

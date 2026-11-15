@@ -1,4 +1,14 @@
-import { Config, ConfigProvider, Context, Effect, Exit, Layer, Redacted, Schema, pipe } from "effect";
+import {
+  Config,
+  ConfigProvider,
+  Context,
+  Effect,
+  Exit,
+  Layer,
+  Redacted,
+  Schema,
+  pipe,
+} from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
 export interface Stage03Input {
@@ -12,7 +22,7 @@ export interface Stage03Input {
 // 1. Declarative Schema for boundary validation
 export const DispatchPayloadSchema = Schema.Struct({
   recipientEmail: Schema.NonEmptyString.pipe(
-    Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
+    Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
   ),
   priority: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 5 }))),
   channel: Schema.Literals(["email", "sms", "webhook"]),
@@ -26,10 +36,9 @@ export interface AppSettings {
   readonly apiToken: Redacted.Redacted<string>;
 }
 
-export class SettingsService extends Context.Service<
-  SettingsService,
-  AppSettings
->()("SettingsService") {}
+export class SettingsService extends Context.Service<SettingsService, AppSettings>()(
+  "SettingsService",
+) {}
 
 // 2. Load configuration into a Layer using Config.* combinators
 export const SettingsLayer = Layer.effect(
@@ -38,7 +47,7 @@ export const SettingsLayer = Layer.effect(
     region: Config.String("DISPATCH_REGION").pipe(Config.withDefault("us-east-1")),
     maxRetries: Config.Int("DISPATCH_MAX_RETRIES").pipe(Config.withDefault(3)),
     apiToken: Config.Redacted("DISPATCH_API_TOKEN"),
-  })
+  }),
 );
 
 export const validateAndAttachConfig = (rawPayload: unknown) =>
@@ -53,7 +62,7 @@ export const validateAndAttachConfig = (rawPayload: unknown) =>
       tokenRedactedPreview: String(settings.apiToken),
       tokenLength: Redacted.value(settings.apiToken).length,
       payload,
-    }))
+    })),
   );
 
 export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> => {
@@ -64,7 +73,7 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
     module: string,
     label: string,
     detail: string,
-    status: TraceEvent["status"] = "ok"
+    status: TraceEvent["status"] = "ok",
   ) => {
     trace.push({
       step: trace.length + 1,
@@ -86,7 +95,7 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
   pushTrace(
     "ConfigProvider",
     "ConfigProvider.fromEnv",
-    `Loaded env keys: ${Object.keys(envRecord).join(", ")}`
+    `Loaded env keys: ${Object.keys(envRecord).join(", ")}`,
   );
 
   const rawPayload = {
@@ -102,17 +111,17 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
         pushTrace(
           "Config.Redacted",
           "String(settings.apiToken)",
-          `Safely logged as ${res.tokenRedactedPreview} (actual len=${res.tokenLength})`
+          `Safely logged as ${res.tokenRedactedPreview} (actual len=${res.tokenLength})`,
         );
         pushTrace(
           "Schema",
           "Schema.decodeUnknownEffect",
-          `Validated ${res.payload.recipientEmail} at priority ${res.payload.priority}`
+          `Validated ${res.payload.recipientEmail} at priority ${res.payload.priority}`,
         );
-      })
+      }),
     ),
     Effect.provide(SettingsLayer),
-    Effect.provide(ConfigProvider.layer(customProvider))
+    Effect.provide(ConfigProvider.layer(customProvider)),
   );
 
   return Effect.runPromiseExit(runnable).then((exit) => {
@@ -134,12 +143,7 @@ export const runStage03 = (input: Stage03Input): Promise<StageExecutionResult> =
       };
     }
 
-    pushTrace(
-      "Schema",
-      "Validation / Config Failure",
-      String(exit.cause),
-      "error"
-    );
+    pushTrace("Schema", "Validation / Config Failure", String(exit.cause), "error");
 
     return {
       stageId: "stage-03",

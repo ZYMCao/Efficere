@@ -29,9 +29,9 @@ export const recordDispatch = (recipient: string, message: string) =>
           id: `disp-${timestamp.slice(11, 19).replace(/:/g, "")}`,
           recipient,
           entry,
-        }))
-      )
-    )
+        })),
+      ),
+    ),
   );
 
 export const runStage01 = (input: Stage01Input): Promise<StageExecutionResult> => {
@@ -76,10 +76,10 @@ export const runStage01 = (input: Stage01Input): Promise<StageExecutionResult> =
     recordDispatch(recipient, message),
     Effect.tap((res) =>
       Effect.sync(() =>
-        pushTrace("Effect", "Effect.runPromise", `Materialized dispatch ${res.id}`)
-      )
+        pushTrace("Effect", "Effect.runPromise", `Materialized dispatch ${res.id}`),
+      ),
     ),
-    Effect.provide(AppLayer)
+    Effect.provide(AppLayer),
   );
 
   return Effect.runPromise(runnable).then((output) => ({

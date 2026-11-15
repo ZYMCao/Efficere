@@ -15,9 +15,7 @@ function highlightLine(line: string): JSX.Element {
   TOKEN_RE.lastIndex = 0;
   while ((match = TOKEN_RE.exec(line)) !== null) {
     if (match.index > lastIdx) {
-      parts.push(
-        <span class="text-slate-100">{line.slice(lastIdx, match.index)}</span>
-      );
+      parts.push(<span class="text-slate-100">{line.slice(lastIdx, match.index)}</span>);
     }
     const token = match[0];
     let cls = "text-sky-300 font-medium";
@@ -25,11 +23,7 @@ function highlightLine(line: string): JSX.Element {
       cls = "text-slate-400 italic";
     } else if (token.startsWith('"') || token.startsWith("`")) {
       cls = "text-emerald-300";
-    } else if (
-      /^(import|from|export|const|class|extends|type|readonly|new|return)$/.test(
-        token
-      )
-    ) {
+    } else if (/^(import|from|export|const|class|extends|type|readonly|new|return)$/.test(token)) {
       cls = "text-amber-300";
     }
     parts.push(<span class={cls}>{token}</span>);
@@ -70,7 +64,7 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
   const diffLines = createMemo(() =>
     props.previousStage && props.activeTab === "diff"
       ? computeLineDiff(props.previousStage.code, props.stage.code)
-      : []
+      : [],
   );
 
   return (
@@ -83,14 +77,10 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
           <h1 class="font-display text-xl font-bold text-slate-900 text-balance">
             {props.stage.number}. {props.stage.title}
           </h1>
-          <span class="text-xs text-slate-500">
-            Pipelines Only · Zero Generators
-          </span>
+          <span class="text-xs text-slate-500">Pipelines Only · Zero Generators</span>
         </div>
 
-        <p class="text-sm text-slate-600 leading-relaxed max-w-[72ch]">
-          {props.stage.summary}
-        </p>
+        <p class="text-sm text-slate-600 leading-relaxed max-w-[72ch]">{props.stage.summary}</p>
 
         <div class="mt-3 text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span class="font-medium text-slate-700">Primitives:</span>
@@ -145,9 +135,7 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
               },
             ]}
           >
-            {props.previousStage
-              ? `Diff vs Stage ${props.previousStage.number}`
-              : "Initial Stage"}
+            {props.previousStage ? `Diff vs Stage ${props.previousStage.number}` : "Initial Stage"}
           </button>
           <button
             type="button"
@@ -208,8 +196,8 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
         {(prev) => (
           <div class="bg-slate-950 text-slate-100 p-4 overflow-x-auto text-xs leading-6 font-mono">
             <div class="text-[11px] text-slate-400 mb-3 pb-2 border-b border-slate-800">
-              Comparing Stage {prev().number} ({prev().shortTitle}) → Stage{" "}
-              {props.stage.number} ({props.stage.shortTitle})
+              Comparing Stage {prev().number} ({prev().shortTitle}) → Stage {props.stage.number} (
+              {props.stage.shortTitle})
             </div>
             <pre class="m-0">
               <For each={diffLines()} keyed={false}>
@@ -218,20 +206,14 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
                     class={[
                       "flex gap-3 px-2 rounded",
                       {
-                        "bg-emerald-950/70 text-emerald-200":
-                          line().type === "added",
-                        "bg-rose-950/60 text-rose-300":
-                          line().type === "removed",
+                        "bg-emerald-950/70 text-emerald-200": line().type === "added",
+                        "bg-rose-950/60 text-rose-300": line().type === "removed",
                         "text-slate-300": line().type === "same",
                       },
                     ]}
                   >
                     <span class="select-none w-4 shrink-0 font-semibold">
-                      {line().type === "added"
-                        ? "+"
-                        : line().type === "removed"
-                          ? "-"
-                          : " "}
+                      {line().type === "added" ? "+" : line().type === "removed" ? "-" : " "}
                     </span>
                     <code class="whitespace-pre">{line().text || " "}</code>
                   </div>
@@ -245,9 +227,7 @@ export function CodeStagePanel(props: CodeStagePanelProps): JSX.Element {
       <Show when={props.activeTab === "notes"}>
         <div class="p-6 space-y-6 bg-white">
           <div>
-            <h3 class="font-display text-sm font-semibold text-slate-900 mb-1.5">
-              Mental Model
-            </h3>
+            <h3 class="font-display text-sm font-semibold text-slate-900 mb-1.5">Mental Model</h3>
             <p class="text-sm text-slate-600 leading-relaxed max-w-[68ch]">
               {props.stage.mentalModel}
             </p>
