@@ -22,7 +22,7 @@ export function ExecutionDeck(props: ExecutionDeckProps): JSX.Element {
 			<div>
 				<div class="flex items-baseline justify-between gap-2">
 					<h2 class="font-display text-sm font-semibold text-slate-900">Live Runtime Sandbox</h2>
-					<span class="text-xs text-slate-500">Effect v4 Server</span>
+					<span class="text-xs text-slate-500">Effect v4 Runtime</span>
 				</div>
 				<p class="text-xs text-slate-500 mt-1">Adjust scenario inputs and execute Stage {props.stage.number} on the live runtime.</p>
 			</div>

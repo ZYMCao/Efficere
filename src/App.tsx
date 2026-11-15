@@ -2,6 +2,7 @@ import { createMemo, createSignal, createStore, Match, onSettled, snapshot, Swit
 import type { JSX } from "@solidjs/web";
 import "./index.css";
 import { CURRICULUM_STAGES } from "./effect-curriculum/catalog";
+import { runStageById } from "./effect-curriculum/runner";
 import type { StageExecutionResult, StageId } from "./effect-curriculum/types";
 import { buildDefaultFieldValues, filterStagesByPrimitive } from "./utils/curriculumHelpers";
 import { TopNav, type AppSection } from "./components/TopNav";
@@ -41,15 +42,7 @@ export default function App(): JSX.Element {
 		setIsRunning(true);
 		setErrorMessage(null);
 		try {
-			const res = await fetch(`/api/stages/${stageId}/run`, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify(payload),
-			});
-			if (!res.ok) {
-				throw new Error(`Server returned HTTP ${res.status}`);
-			}
-			const data = (await res.json()) as StageExecutionResult;
+			const data = await runStageById(stageId, payload);
 			setResult(data);
 			setCompletedStages((s) => {
 				s[stageId] = true;
