@@ -4,7 +4,11 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"prepare": "vp config --no-agent && mkdir -p .vite-hooks && echo 'vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint"
+		"prepare": "vp config --no-agent && mkdir -p .vite-hooks && echo 'vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint",
+		"dev": "vp dev",
+		"build": "vp build",
+		"preview": "vp preview",
+		"lint": "vp lint"
 	},
 	"dependencies": {
 		"@effect/platform-node": "~4",
