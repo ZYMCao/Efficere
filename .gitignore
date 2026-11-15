@@ -1,8 +1,43 @@
-node_modules/
-build/
-dist/
-coverage/
+# Build Output
+**/build/
+**/dist/
+**/.output/
+**/.nitro/
+**/.solid-start/
+**/__pycache__/
+*/**/target/
+**/*.zip
+!apps/veams/public/reference-documents/pre-file/*.zip
+/apps/*/file-routes.d.ts
+
+# Hooks
+/.vite-hooks/
+
+# Dependencies
+**/node_modules/
+**/bun.lock
+**/package-lock.json
+
+# IDEs
+/.idea
+/.vscode
+/.hn
+
+# Logs
+**/*.log
+
+# Harness
+skills-lock.json
+.superpowers/
+.cloudflare/
+
+# System Files
 .DS_Store
-*.log
-.env*
-!.env.example
+Thumbs.db
+
+# Environment Files
+**/.env
+**/.env.*
+
+# Playgrounds
+/apps/playground
