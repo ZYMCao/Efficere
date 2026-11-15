@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"prepare": "vp config --no-agent && mkdir -p .vite-hooks && echo 'vp staged --fail-on-changes' > .vite-hooks/pre-commit && effect-tsgo patch --typescript --oxlint",
-		"dev": "vp dev",
+		"dev": "tsx src/server.ts",
 		"build": "vp build",
 		"preview": "vp preview",
 		"lint": "vp lint"
@@ -24,17 +24,11 @@
 		"@effect/tsgo": "~0",
 		"@types/node": "~24",
 		"tailwindcss": "~4",
+		"tsx": "~4",
 		"typescript": "~7",
 		"vite-plus": "1.6.0"
 	},
 	"overrides": {
 		"vite": "npm:@voidzero-dev/vite-plus-core@1.6.0"
-	},
-	"devEngines": {
-		"packageManager": {
-			"name": "bun",
-			"version": "^1.4",
-			"onFail": "download"
-		}
 	}
 }
