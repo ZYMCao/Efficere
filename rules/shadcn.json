@@ -1,0 +1,5 @@
+{
+	"rule": {
+		"shadcn/no-arbitrary-values": "error"
+	}
+}

@@ -1,0 +1,40 @@
+id: prefer-concise-callback-tsx
+valid:
+    - |
+        const direct = (x: number): number => {
+          return x + 1;
+        };
+    - |
+        items.map((x) => {
+          return Effect.succeed(x).pipe(Effect.map((y) => y.id));
+        });
+    - |
+        items.map((x) => {
+          return Effect.flatMap(Effect.succeed(x), (y) => Effect.succeed(y.id));
+        });
+    - |
+        items.map((x) => {
+          const y = convert(x);
+          return y.id;
+        });
+invalid:
+    - |
+        items.map((x) => {
+          return <span>{x.id}</span>;
+        });
+    - |
+        items.map((x: { id: number }) => {
+          return x.id;
+        });
+    - |
+        items.map(async (x) => {
+          return x.id;
+        });
+    - |
+        items.map((x) => {
+          return { id: x.id };
+        });
+    - |
+        items.map(x => {
+          return x.id;
+        });

@@ -1,0 +1,67 @@
+{
+	"presets": [
+		"@effect/tsgo/oxlint-presets/correctness.json",
+		"@effect/tsgo/oxlint-presets/antipattern.json",
+		"@effect/tsgo/oxlint-presets/effect-native.json",
+		"@effect/tsgo/oxlint-presets/style.json",
+		"@effect/tsgo/oxlint-presets/recommended.json"
+	],
+	"overrides": [
+		{
+			"files": ["apps/**", "libs/**", "scripts/**"],
+			"rule": {
+				"effecttsgo/crypto-random-uuid": "off",
+				"effecttsgo/strict-boolean-expressions": "off",
+				"effecttsgo/unstable-api-usage": "off",
+				"effecttsgo/process-env": "error",
+				"effecttsgo/global-console": "error",
+				"effecttsgo/global-timers": "error",
+				"effecttsgo/strict-effect-provide": "error",
+				"effecttsgo/node-builtin-import": "error",
+				"effecttsgo/async-function": "error",
+				"effecttsgo/schema-number": "error",
+				"effecttsgo/new-schema-class": "error",
+				"effecttsgo/lazy-effect": "error",
+				"effecttsgo/missing-pipeable-signature": "error"
+			}
+		},
+		{
+			"files": ["scripts/*/*.ts"],
+			"rule": {
+				"effecttsgo/strict-effect-provide": "off"
+			}
+		},
+		{
+			"files": ["**/*.test.ts", "scripts/config/*.ts", "apps/*/vite.config.ts"],
+			"rule": {
+				"effecttsgo/strict-effect-provide": "off",
+				"effecttsgo/node-builtin-import": "off"
+			}
+		},
+		{
+			"files": ["libs/*/src/ui/e2e/**", "apps/temptator/**"],
+			"rule": {
+				"effecttsgo/async-function": "off",
+				"effecttsgo/missing-pipeable-signature": "off",
+				"effecttsgo/node-builtin-import": "off"
+			}
+		},
+		{
+			"files": ["libs/components/**", "libs/ui/**", "apps/monolithic/*.config.ts"],
+			"rule": {
+				"effecttsgo/strict-boolean-expressions": "off",
+				"effecttsgo/unstable-api-usage": "off",
+				"effecttsgo/process-env": "off",
+				"effecttsgo/global-console": "off",
+				"effecttsgo/global-timers": "off",
+				"effecttsgo/strict-effect-provide": "off",
+				"effecttsgo/node-builtin-import": "off",
+				"effecttsgo/async-function": "off",
+				"effecttsgo/schema-number": "off",
+				"effecttsgo/new-schema-class": "off",
+				"effecttsgo/lazy-effect": "off",
+				"effecttsgo/missing-pipeable-signature": "off"
+			}
+		}
+	]
+}

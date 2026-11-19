@@ -71,35 +71,38 @@ export const DispatchStoreLive = Layer.effect(
 				],
 			]),
 		),
-		Effect.map((storeRef) => ({
-			create: (recipient, subject) =>
-				pipe(
-					Ref.modify(storeRef, (map) => {
-						const id = `disp-${101 + map.size}`;
-						const item: typeof DispatchItemSchema.Type = {
-							id,
-							recipient,
-							subject,
-							status: "queued",
-						};
-						const next = new Map(map);
-						next.set(id, item);
-						return [item, next] as const;
-					}),
-				),
-			findById: (id) =>
-				pipe(
-					Ref.get(storeRef),
-					Effect.flatMap((map) => {
-						const found = map.get(id);
-						return found ? Effect.succeed(found) : Effect.fail(new DispatchNotFound({ id }));
-					}),
-				),
-			snapshot: pipe(
+		Effect.map((storeRef) => {
+			const snapshot = pipe(
 				Ref.get(storeRef),
 				Effect.map((map) => Array.from(map.values())),
-			),
-		})),
+			);
+			return {
+				create: (recipient, subject) =>
+					pipe(
+						Ref.modify(storeRef, (map) => {
+							const id = `disp-${101 + map.size}`;
+							const item: typeof DispatchItemSchema.Type = {
+								id,
+								recipient,
+								subject,
+								status: "queued",
+							};
+							const next = new Map(map);
+							next.set(id, item);
+							return [item, next] as const;
+						}),
+					),
+				findById: (id) =>
+					pipe(
+						Ref.get(storeRef),
+						Effect.flatMap((map) => {
+							const found = map.get(id);
+							return found ? Effect.succeed(found) : Effect.fail(new DispatchNotFound({ id }));
+						}),
+					),
+				snapshot,
+			};
+		}),
 	),
 );
 
@@ -153,8 +156,8 @@ export function runStage06(input: Stage06Input): Promise<StageExecutionResult> {
 		({ handler }) =>
 			pipe(
 				Effect.promise(() => handler(request)),
-				Effect.flatMap((response) =>
-					pipe(
+				Effect.flatMap((response) => {
+					return pipe(
 						Effect.promise(() => response.text()),
 						Effect.map((rawText) => {
 							let parsedBody: unknown = rawText;
@@ -169,8 +172,8 @@ export function runStage06(input: Stage06Input): Promise<StageExecutionResult> {
 								body: parsedBody,
 							};
 						}),
-					),
-				),
+					);
+				}),
 			),
 		({ dispose }) => Effect.promise(() => dispose()),
 	);

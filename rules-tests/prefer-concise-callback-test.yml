@@ -1,0 +1,66 @@
+id: prefer-concise-callback
+valid:
+    - |
+        const direct = (x: number): number => {
+          return x + 1;
+        };
+    - |
+        export const exported = (x: number): number => {
+          return x + 1;
+        };
+    - |
+        items.map((x) => {
+          return Effect.succeed(x).pipe(Effect.map((y) => y.id));
+        });
+    - |
+        items.map((x) => {
+          return Effect.map(Effect.succeed(x), (y) => y.id);
+        });
+    - |
+        items.map((x) => {
+          const y = convert(x);
+          return y.id;
+        });
+    - |
+        items.forEach((x) => {
+          void x;
+        });
+    - |
+        items.map((x) => x.id);
+invalid:
+    - |
+        items.map((x) => {
+          return x.id;
+        });
+    - |
+        items.map((x: { id: number }) => {
+          return x.id;
+        });
+    - |
+        items.map((x: { id: number }): number => {
+          return x.id;
+        });
+    - |
+        items.map(async (x) => {
+          return x.id;
+        });
+    - |
+        items.map(async (x: { id: number }): Promise<number> => {
+          return x.id;
+        });
+    - |
+        items.map((x) => {
+          return { id: x.id };
+        });
+    - |
+        items.map(x => {
+          return x.id;
+        });
+    - |
+        items.map(<T>(x: T): T => {
+          return x;
+        });
+    - |
+        items.filter((x: unknown): x is string => {
+          return typeof x === "string";
+        });

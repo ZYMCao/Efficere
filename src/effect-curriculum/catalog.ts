@@ -26,21 +26,18 @@ export class AuditLog extends Context.Service<
 >()("AuditLog") {}
 
 // Effect<{ id: string; recipient: string; entry: string }, never, LedgerClock | AuditLog>
-export const recordDispatch = (recipient: string, message: string) =>
-  pipe(
+export function recordDispatch(recipient: string, message: string) {
+  return pipe(
     LedgerClock.use((clock) => clock.nowIso),
-    Effect.flatMap((timestamp) =>
-      pipe(
-        Effect.succeed(\`[\${timestamp}] -> \${recipient}: \${message}\`),
-        Effect.tap((entry) => AuditLog.use((log) => log.record(entry))),
-        Effect.map((entry) => ({
-          id: \`disp-\${timestamp.slice(11, 19).replace(/:/g, "")}\`,
-          recipient,
-          entry
-        }))
-      )
-    )
+    Effect.map((timestamp) => ({ timestamp, entry: \`[\${timestamp}] -> \${recipient}: \${message}\` })),
+    Effect.tap(({ entry }) => AuditLog.use((log) => log.record(entry))),
+    Effect.map(({ timestamp, entry }) => ({
+      id: \`disp-\${timestamp.slice(11, 19).replace(/:/g, "")}\`,
+      recipient,
+      entry
+    }))
   )
+}
 
 const AppLayer = Layer.mergeAll(
   Layer.succeed(LedgerClock, {
@@ -100,8 +97,8 @@ export class RecipientRepo extends Context.Service<
   { readonly findById: (id: string) => Effect.Effect<Option.Option<RecipientRecord>> }
 >()("RecipientRepo") {}
 
-export const prepareDispatch = (recipientId: string, costUnits: number) =>
-  pipe(
+export function prepareDispatch(recipientId: string, costUnits: number) {
+  return pipe(
     Effect.Do,
     Effect.bind("maybeRecipient", () =>
       RecipientRepo.use((repo) => repo.findById(recipientId))
@@ -125,6 +122,7 @@ export const prepareDispatch = (recipientId: string, costUnits: number) =>
         : Effect.succeed({ recipientId: recipient.id, reservedUnits: costUnits })
     )
   )
+}
 
 const resilientDispatch = pipe(
   prepareDispatch("acct-low", 5),
@@ -189,8 +187,8 @@ export const SettingsLayer = Layer.effect(
   })
 )
 
-export const validateAndAttachConfig = (rawPayload: unknown) =>
-  pipe(
+export function validateAndAttachConfig(rawPayload: unknown) {
+  return pipe(
     Effect.Do,
     Effect.bind("settings", () => SettingsService),
     Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
@@ -199,7 +197,8 @@ export const validateAndAttachConfig = (rawPayload: unknown) =>
       tokenPreview: String(settings.apiToken), // "<redacted>"
       payload
     }))
-  )`,
+  )
+}`,
 		fields: [
 			{
 				key: "envRegion",
@@ -268,12 +267,13 @@ export const computeRoutingPlan = Match.type<DispatchCommand>().pipe(
   })
 )
 
-export const classifyLatencyTier = (slaMs: number) =>
-  Match.value(slaMs).pipe(
+export function classifyLatencyTier(slaMs: number) {
+  return Match.value(slaMs).pipe(
     Match.when((ms) => ms <= 400, () => "realtime"),
     Match.when((ms) => ms <= 1200, () => "standard"),
     Match.orElse(() => "batch")
-  )`,
+  )
+}`,
 		fields: [
 			{
 				key: "commandType",
@@ -314,12 +314,12 @@ export const classifyLatencyTier = (slaMs: number) =>
 		code: `import { Effect, Match, Schema, Stream, pipe } from "effect"
 import { DispatchCommandSchema, computeRoutingPlan } from "./stage04PatternMatch"
 
-export const processDispatchBatch = (
+export function processDispatchBatch(
   rawBatch: ReadonlyArray<unknown>,
   concurrency: number,
   minUrgency: number
-) =>
-  pipe(
+) {
+  return pipe(
     Stream.fromIterable(rawBatch),
     Stream.mapEffect(
       (raw) => Schema.decodeUnknownEffect(DispatchCommandSchema)(raw),
@@ -340,7 +340,8 @@ export const processDispatchBatch = (
       { concurrency }
     ),
     Stream.runCollect
-  )`,
+  )
+}`,
 		fields: [
 			{
 				key: "concurrency",
@@ -458,8 +459,8 @@ export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(
 		code: `import { Effect, Layer, Schedule, Schema, pipe } from "effect"
 import { PersistedQueue } from "effect/persistence"
 
-export const durableDispatchFlow = (idempotencyKey: string, recipient: string) =>
-  pipe(
+export function durableDispatchFlow(idempotencyKey: string, recipient: string) {
+  return pipe(
     Effect.Do,
     Effect.bind("queue", () =>
       PersistedQueue.make({
@@ -491,7 +492,8 @@ export const durableDispatchFlow = (idempotencyKey: string, recipient: string) =
     )
   ).pipe(
     Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory)))
-  )`,
+  )
+}`,
 		fields: [
 			{
 				key: "idempotencyKey",

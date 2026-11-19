@@ -1,0 +1,12 @@
+{
+	"rule": {
+		"effecttsgo/effect-do-notation": "off",
+		"effecttsgo/effect-fn-opportunity": "off",
+		"effecttsgo/unnecessary-arrow-block": "off",
+		"eslint-js/no-restricted-syntax": [
+			"error",
+			{ "selector": "FunctionDeclaration[generator=true]", "message": "no generator functions: compose the Effect as a pipe chain" },
+			{ "selector": "FunctionExpression[generator=true]", "message": "no generator functions: compose the Effect as a pipe chain" }
+		]
+	}
+}

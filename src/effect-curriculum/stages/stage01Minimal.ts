@@ -11,21 +11,16 @@ export class LedgerClock extends Context.Service<LedgerClock, { readonly nowIso:
 
 export class AuditLog extends Context.Service<AuditLog, { readonly record: (entry: string) => Effect.Effect<void> }>()("AuditLog") {}
 
-// 2. Pure pipeline program: Effect<{ id: string; entry: string }, never, LedgerClock | AuditLog>
-export function recordDispatch(recipient: string, message: string) {
-	return pipe(
-		LedgerClock.use((clock) => clock.nowIso),
-		Effect.flatMap((timestamp) =>
-			pipe(
-				Effect.succeed(`[${timestamp}] -> ${recipient}: ${message}`),
-				Effect.tap((entry) => AuditLog.use((log) => log.record(entry))),
-				Effect.map((entry) => ({
-					id: `disp-${timestamp.slice(11, 19).replace(/:/g, "")}`,
-					recipient,
-					entry,
-				})),
-			),
-		),
+// 2. Pure pipeline program
+export function recordDispatch(recipient: string, message: string): Effect.Effect<{ id: string; entry: string }, never, LedgerClock | AuditLog> {
+	return LedgerClock.use((clock) => clock.nowIso).pipe(
+		Effect.map((timestamp) => ({ timestamp, entry: `[${timestamp}] -> ${recipient}: ${message}` })),
+		Effect.tap(({ entry }) => AuditLog.use((log) => log.record(entry))),
+		Effect.map(({ timestamp, entry }) => ({
+			id: `disp-${timestamp.slice(11, 19).replace(/:/g, "")}`,
+			recipient,
+			entry,
+		})),
 	);
 }
 

@@ -1,0 +1,27 @@
+{
+	"plugins": ["unicorn", "typescript", "oxc"],
+	"rule": {
+		"no-comments/disallowComments": "error",
+		"no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
+		"no-explicit-any": "error",
+		"no-irregular-whitespace": "warn",
+		"no-restricted-imports": ["error", { "patterns": [{ "group": ["@regestae/*/src", "@regestae/*/src/**"] }] }],
+		"no-unused-vars": [
+			"error",
+			{
+				"args": "none",
+				"varsIgnorePattern": "^_",
+				"caughtErrorsIgnorePattern": "^_",
+				"fix": { "imports": "safe-fix" }
+			}
+		]
+	},
+	"overrides": [
+		{
+			"files": ["apps/playground/**"],
+			"rule": {
+				"no-comments/disallowComments": "off"
+			}
+		}
+	]
+}

@@ -1,0 +1,29 @@
+{
+	"overrides": [
+		{
+			"files": ["libs/*/src/ui/**/*.ts", "libs/*/src/ui/**/*.tsx", "apps/monolithic/**/*.ts", "apps/monolithic/**/*.tsx"],
+			"rule": {
+				"eslint-js/no-restricted-syntax": [
+					"error",
+					{
+						"selector": "JSXText[value=/[a-zA-Z\\u4e00-\\u9fa5]/]",
+						"message": "Hardcoded text found in JSX template (Chinese/English): add key-value pairs to libs/i18n/messages/zh.json and en.json, then wrap with Paraglide's m.<key>()!"
+					},
+					{ "selector": "CallExpression[callee.name='confirm']", "message": "Use <ConfirmDialog> from libs/components instead of native confirm()" },
+					{ "selector": "CallExpression[callee.name='alert']", "message": "Use <Toaster> from libs/ui instead of native alert()" },
+					{ "selector": "CallExpression[callee.name='prompt']", "message": "Use <Dialog> from libs/components instead of native prompt()" },
+					{ "selector": "JSXOpeningElement[name.name='select']", "message": "Use <Select> from libs/ui instead of native <select>" },
+					{ "selector": "JSXOpeningElement[name.name='button']", "message": "Use <Button> from libs/ui instead of native <button>" },
+					{
+						"selector": "JSXOpeningElement[name.name='div']:has(> JSXAttribute[name.name='role'][value.value='button'])",
+						"message": "Use <DropdownMenu> or <Dialog> from libs/components instead of <div role=\"button\">"
+					}
+				]
+			}
+		},
+		{
+			"files": ["libs/ui/**"],
+			"rule": { "eslint-js/no-restricted-syntax": "off" }
+		}
+	]
+}

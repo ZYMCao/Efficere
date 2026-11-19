@@ -1,0 +1,101 @@
+id: prefer-concise-callback
+snapshots:
+    "items.filter((x: unknown): x is string => {\n  return typeof x === \"string\";\n});\n":
+        fixed: |
+            items.filter((x: unknown): x is string => (typeof x === "string"));
+        labels:
+            - source: |-
+                  (x: unknown): x is string => {
+                    return typeof x === "string";
+                  }
+              style: primary
+              start: 13
+              end: 77
+    "items.map((x) => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map((x) => (x.id));
+        labels:
+            - source: |-
+                  (x) => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 35
+    "items.map((x) => {\n  return { id: x.id };\n});\n":
+        fixed: |
+            items.map((x) => ({ id: x.id }));
+        labels:
+            - source: |-
+                  (x) => {
+                    return { id: x.id };
+                  }
+              style: primary
+              start: 10
+              end: 43
+    "items.map((x: { id: number }) => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map((x: { id: number }) => (x.id));
+        labels:
+            - source: |-
+                  (x: { id: number }) => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 51
+    "items.map((x: { id: number }): number => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map((x: { id: number }): number => (x.id));
+        labels:
+            - source: |-
+                  (x: { id: number }): number => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 59
+    "items.map(<T>(x: T): T => {\n  return x;\n});\n":
+        fixed: |
+            items.map(<T>(x: T): T => (x));
+        labels:
+            - source: |-
+                  <T>(x: T): T => {
+                    return x;
+                  }
+              style: primary
+              start: 10
+              end: 41
+    "items.map(async (x) => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map(async (x) => (x.id));
+        labels:
+            - source: |-
+                  async (x) => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 41
+    "items.map(async (x: { id: number }): Promise<number> => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map(async (x: { id: number }): Promise<number> => (x.id));
+        labels:
+            - source: |-
+                  async (x: { id: number }): Promise<number> => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 74
+    "items.map(x => {\n  return x.id;\n});\n":
+        fixed: |
+            items.map(x => (x.id));
+        labels:
+            - source: |-
+                  x => {
+                    return x.id;
+                  }
+              style: primary
+              start: 10
+              end: 33

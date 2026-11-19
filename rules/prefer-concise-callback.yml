@@ -1,0 +1,93 @@
+id: prefer-concise-callback
+language: TypeScript
+severity: warning
+message: "Use a concise arrow body when the callback block only returns an expression."
+rewriters:
+    - id: async-generic-typed
+      rule:
+          pattern: "async <$G>($$$P): $T => { return $B; }"
+      fix: "async <$G>($$$P): $T => ($B)"
+    - id: async-generic
+      rule:
+          pattern: "async <$G>($$$P) => { return $B; }"
+      fix: "async <$G>($$$P) => ($B)"
+    - id: generic-typed
+      rule:
+          pattern: "<$G>($$$P): $T => { return $B; }"
+      fix: "<$G>($$$P): $T => ($B)"
+    - id: generic
+      rule:
+          pattern: "<$G>($$$P) => { return $B; }"
+      fix: "<$G>($$$P) => ($B)"
+    - id: async-typed
+      rule:
+          pattern: "async ($$$P): $T => { return $B; }"
+      fix: "async ($$$P): $T => ($B)"
+    - id: async
+      rule:
+          pattern: "async ($$$P) => { return $B; }"
+      fix: "async ($$$P) => ($B)"
+    - id: typed-predicate
+      rule:
+          pattern: "($$$P): $N is $TY => { return $B; }"
+      fix: "($$$P): $N is $TY => ($B)"
+    - id: typed
+      rule:
+          pattern: "($$$P): $T => { return $B; }"
+      fix: "($$$P): $T => ($B)"
+    - id: untyped
+      rule:
+          pattern: "($$$P) => { return $B; }"
+      fix: "($$$P) => ($B)"
+    - id: bare
+      rule:
+          pattern: "$P => { return $B; }"
+      fix: "$P => ($B)"
+rule:
+    pattern: $MATCH
+    any:
+        - pattern: "async <$G>($$$P): $T => { return $B; }"
+        - pattern: "async <$G>($$$P) => { return $B; }"
+        - pattern: "<$G>($$$P): $T => { return $B; }"
+        - pattern: "<$G>($$$P) => { return $B; }"
+        - pattern: "async ($$$P): $T => { return $B; }"
+        - pattern: "async ($$$P) => { return $B; }"
+        - pattern: "($$$P): $N is $TY => { return $B; }"
+        - pattern: "($$$P): $T => { return $B; }"
+        - pattern: "($$$P) => { return $B; }"
+        - pattern: "$P => { return $B; }"
+    not:
+        any:
+            - inside:
+                  kind: variable_declarator
+            - has:
+                  pattern: "$X.pipe($$$A)"
+                  stopBy: end
+            - has:
+                  pattern: "pipe($$$A)"
+                  stopBy: end
+            - has:
+                  pattern: "Effect.map($E, $F)"
+                  stopBy: end
+            - has:
+                  pattern: "Effect.flatMap($E, $F)"
+                  stopBy: end
+            - has:
+                  pattern: "Effect.tap($E, $F)"
+                  stopBy: end
+transform:
+    FIXED:
+        rewrite:
+            source: $MATCH
+            rewriters:
+                - async-generic-typed
+                - async-generic
+                - generic-typed
+                - generic
+                - async-typed
+                - async
+                - typed-predicate
+                - typed
+                - untyped
+                - bare
+fix: $FIXED
