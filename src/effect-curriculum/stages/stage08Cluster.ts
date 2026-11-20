@@ -41,15 +41,8 @@ interface TenantState {
 }
 
 export const TenantDispatcherLive = TenantDispatcher.toLayer(
-	Effect.Do.pipe(
-		Effect.bind("address", () => Entity.CurrentAddress),
-		Effect.bind("stateRef", () =>
-			Ref.make<TenantState>({
-				totalSent: 0,
-				subjects: [],
-			}),
-		),
-		Effect.map(({ address, stateRef }) =>
+	Effect.all([Entity.CurrentAddress, Ref.make<TenantState>({ totalSent: 0, subjects: [] })], { concurrency: 1 }).pipe(
+		Effect.map(([address, stateRef]) =>
 			TenantDispatcher.of({
 				Dispatch: (envelope) =>
 					Ref.modify(
@@ -151,11 +144,14 @@ export function runStage08(input: Stage08Input): Promise<StageExecutionResult> {
 				.Dispatch({ subject: "Globex Settlement #1" })
 				.pipe(Effect.tap((res) => Effect.sync(() => pushTrace("Cluster.Entity", `${res.entityAddress}`, `Isolated actor Seq=${res.sequenceNo} on shard=${res.shardId}`))));
 
-			return Effect.Do.pipe(
-				Effect.bind("acmeDispatches", () => Effect.all(acmeCalls, { concurrency: "unbounded" })),
-				Effect.bind("globexDispatches", () => Effect.all([globexCall])),
-				Effect.bind("acmeLedger", () => acmeClient.GetLedger()),
-				Effect.bind("globexLedger", () => globexClient.GetLedger()),
+			return Effect.all(
+				{
+					acmeDispatches: Effect.all(acmeCalls, { concurrency: "unbounded" }),
+					globexDispatches: Effect.all([globexCall]),
+					acmeLedger: acmeClient.GetLedger(),
+					globexLedger: globexClient.GetLedger(),
+				},
+				{ concurrency: 1 },
 			);
 		}),
 		Effect.scoped,

@@ -28,19 +28,16 @@ export class RecipientRepo extends Context.Service<
 	}
 >()("RecipientRepo") {}
 
-// 2. Pure pipeline using Effect.Do + Effect.bind + Option + typed errors
+// 2. Pure pipeline using Effect.flatMap + Option + typed errors
 export function prepareDispatch(recipientId: string, costUnits: number) {
-	return Effect.Do.pipe(
-		Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
-		Effect.bind("recipient", ({ maybeRecipient }) =>
-			maybeRecipient.pipe(
-				Option.match({
-					onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
-					onSome: Effect.succeed,
-				}),
-			),
+	return RecipientRepo.use((repo) => repo.findById(recipientId)).pipe(
+		Effect.flatMap(
+			Option.match({
+				onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
+				onSome: Effect.succeed,
+			}),
 		),
-		Effect.flatMap(({ recipient }) =>
+		Effect.flatMap((recipient) =>
 			recipient.remainingQuota < costUnits
 				? Effect.fail(
 						new QuotaExceeded({

@@ -37,10 +37,8 @@ export const SettingsLayer = Layer.effect(
 );
 
 export function validateAndAttachConfig(rawPayload: unknown) {
-	return Effect.Do.pipe(
-		Effect.bind("settings", () => SettingsService),
-		Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
-		Effect.map(({ settings, payload }) => ({
+	return Effect.all([SettingsService, Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)]).pipe(
+		Effect.map(([settings, payload]) => ({
 			accepted: true,
 			region: settings.region,
 			maxRetries: settings.maxRetries,

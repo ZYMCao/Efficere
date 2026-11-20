@@ -36,29 +36,19 @@ export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 	}
 
 	// Pure pipeline building PersistedQueue, offering with idempotency key, and taking with scoped retry
-	const program = Effect.Do.pipe(
-		Effect.bind("attemptLog", () => Ref.make<Array<string>>([])),
-		Effect.bind("queue", () =>
+	const program = Effect.all(
+		[
 			PersistedQueue.make({
 				name: "dispatches-durable",
 				schema: QueuedDispatchSchema,
 				maxAttempts: 3,
 				retrySchedule: Schedule.spaced("20 millis"),
 			}),
-		),
-		Effect.bind("firstOfferId", ({ queue }) =>
-			queue
-				.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
-				.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (primary)", `Enqueued id="${id}" with deduplicate="untilRemoved"`)))),
-		),
-		Effect.bind("duplicateOfferId", ({ queue }) =>
-			sendDuplicateOffer
-				? queue
-						.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
-						.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (duplicate)", `Deduplicated offer id="${id}" — ignored by store`, "warn"))))
-				: Effect.succeed<string | null>(null),
-		),
-		Effect.bind("workerOutcome", ({ queue, attemptLog }) => {
+			Ref.make<Array<string>>([]),
+		],
+		{ concurrency: 1 },
+	).pipe(
+		Effect.flatMap(([queue, attemptLog]) => {
 			const takeOnce = queue.take((item, metadata) =>
 				Ref.update(attemptLog, (xs) => [...xs, `attempt=${metadata.attempts} id=${metadata.id}`]).pipe(
 					Effect.flatMap(() => {
@@ -82,17 +72,38 @@ export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 				),
 			);
 
-			// Retry outer worker loop when attempt 1 fails so we observe attempt 2 from the store
-			return takeOnce.pipe(Effect.catchTag("TransientSmtpError", () => takeOnce));
+			return Effect.all(
+				{
+					firstOfferId: queue
+						.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
+						.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (primary)", `Enqueued id="${id}" with deduplicate="untilRemoved"`)))),
+					duplicateOfferId: sendDuplicateOffer
+						? queue
+								.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
+								.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (duplicate)", `Deduplicated offer id="${id}" — ignored by store`, "warn"))))
+						: Effect.succeed<string | null>(null),
+				},
+				{ concurrency: 1 },
+			).pipe(
+				// Retry outer worker loop when attempt 1 fails so we observe attempt 2 from the store
+				Effect.flatMap(({ firstOfferId, duplicateOfferId }) => {
+					return takeOnce.pipe(
+						Effect.catchTag("TransientSmtpError", () => takeOnce),
+						Effect.flatMap((workerOutcome) => {
+							return Ref.get(attemptLog).pipe(
+								Effect.map((attemptsRecorded) => ({
+									firstOfferId,
+									duplicateOfferId,
+									deduplicated: duplicateOfferId === firstOfferId,
+									workerOutcome,
+									attemptsRecorded,
+								})),
+							);
+						}),
+					);
+				}),
+			);
 		}),
-		Effect.bind("attemptsRecorded", ({ attemptLog }) => Ref.get(attemptLog)),
-		Effect.map(({ firstOfferId, duplicateOfferId, workerOutcome, attemptsRecorded }) => ({
-			firstOfferId,
-			duplicateOfferId,
-			deduplicated: duplicateOfferId === firstOfferId,
-			workerOutcome,
-			attemptsRecorded,
-		})),
 		Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))),
 	);
 

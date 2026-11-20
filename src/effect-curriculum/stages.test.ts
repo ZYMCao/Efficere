@@ -6,7 +6,7 @@ import { runStageById } from "./runner";
 
 const stageFiles = ["stage01Minimal.ts", "stage02BasicsOption.ts", "stage03ConfigSchema.ts", "stage04PatternMatch.ts", "stage05Stream.ts", "stage06HttpApi.ts", "stage07PersistedQueue.ts", "stage08Cluster.ts"];
 
-test("Strict Pipeline Rule: zero Effect.gen, function*, yield*, or pipe(...) function calls across all stages", () => {
+test("Strict Pipeline Rule: zero Effect.gen, function*, yield*, pipe(...), Effect.Do, or Effect.bind across all stages", () => {
 	for (const file of stageFiles) {
 		const content = fs.readFileSync(path.join(process.cwd(), "src/effect-curriculum/stages", file), "utf8");
 		assert.equal(content.includes("Effect.gen"), false, `${file} must not use Effect.gen`);
@@ -14,6 +14,8 @@ test("Strict Pipeline Rule: zero Effect.gen, function*, yield*, or pipe(...) fun
 		assert.equal(/function\s*\*/.test(content), false, `${file} must not contain generator functions`);
 		assert.equal(/import\s*\{[^}]*\bpipe\b[^}]*\}\s*from\s*"effect"/.test(content), false, `${file} must not import pipe from "effect"`);
 		assert.equal(/(?<![.\w$])pipe\s*\(/.test(content), false, `${file} must not call pipe(...); use .pipe(...) method chaining`);
+		assert.equal(content.includes("Effect.Do"), false, `${file} must not use Effect.Do`);
+		assert.equal(content.includes("Effect.bind"), false, `${file} must not use Effect.bind; use Effect.flatMap`);
 	}
 });
 

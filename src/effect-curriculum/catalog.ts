@@ -68,11 +68,12 @@ Effect.runPromise(runnable);`,
 		number: "02",
 		title: "Basics, Option & Typed Errors",
 		shortTitle: "Option & Errors",
-		primitives: ["Option", "Schema.TaggedError", "Effect.Do", "Effect.bind", "Effect.catchTag"],
+		primitives: ["Option", "Schema.TaggedError", "Effect.flatMap", "Option.match", "Effect.catchTag"],
 		activeNodes: ["effect", "layer", "option"],
-		summary: "Replace null checks and untyped try/catch blocks with Option and Schema.TaggedError, accumulating multi-step pipeline scope cleanly via Effect.Do and Effect.bind.",
-		mentalModel: "Nullability belongs in Option<A>, while recoverable failures belong in the E channel. Effect.Do starts an empty record context; Effect.bind attaches named results without generator syntax.",
-		pipelineSpotlight: "Effect.Do.pipe(Effect.bind('a', ...), Effect.bind('b', ({ a }) => ...)) is the direct pipeline equivalent of sequential bindings—zero yield*, 100% type-inferred.",
+		summary: "Replace null checks and untyped try/catch blocks with Option and Schema.TaggedError, threading sequential steps through Effect.flatMap without generators or do-notation.",
+		mentalModel:
+			"Nullability belongs in Option<A>, while recoverable failures belong in the E channel. Each Effect.flatMap receives the previous success value directly, so later steps close over earlier results instead of accumulating them in a scope object.",
+		pipelineSpotlight: "source.pipe(Effect.flatMap((a) => next(a)), Effect.flatMap((b) => final(b))) threads values through the success channel—no yield*, no Effect.Do, no Effect.bind bookkeeping.",
 		bestPractice: "Recover selectively with Effect.catchTag('QuotaExceeded', handler) so unhandled errors (RecipientNotFound) remain visible in the function signature.",
 		code: `import { Context, Effect, Option, Schema } from "effect";
 
@@ -98,19 +99,16 @@ export class RecipientRepo extends Context.Service<
 	}
 >()("RecipientRepo") {}
 
-// 2. Pure pipeline using Effect.Do + Effect.bind + Option + typed errors
+// 2. Pure pipeline using Effect.flatMap + Option + typed errors
 export function prepareDispatch(recipientId: string, costUnits: number) {
-	return Effect.Do.pipe(
-		Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
-		Effect.bind("recipient", ({ maybeRecipient }) =>
-			maybeRecipient.pipe(
-				Option.match({
-					onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
-					onSome: Effect.succeed,
-				}),
-			),
+	return RecipientRepo.use((repo) => repo.findById(recipientId)).pipe(
+		Effect.flatMap(
+			Option.match({
+				onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
+				onSome: Effect.succeed,
+			}),
 		),
-		Effect.flatMap(({ recipient }) =>
+		Effect.flatMap((recipient) =>
 			recipient.remainingQuota < costUnits
 				? Effect.fail(
 						new QuotaExceeded({
@@ -204,10 +202,8 @@ export const SettingsLayer = Layer.effect(
 );
 
 export function validateAndAttachConfig(rawPayload: unknown) {
-	return Effect.Do.pipe(
-		Effect.bind("settings", () => SettingsService),
-		Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
-		Effect.map(({ settings, payload }) => ({
+	return Effect.all([SettingsService, Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)]).pipe(
+		Effect.map(([settings, payload]) => ({
 			accepted: true,
 			region: settings.region,
 			maxRetries: settings.maxRetries,
@@ -557,25 +553,41 @@ export class TransientSmtpError extends Schema.TaggedError<TransientSmtpError>()
 
 // Pure pipeline building PersistedQueue, offering with idempotency key, and taking with scoped retry
 export function durableDispatchFlow(idempotencyKey: string, recipient: string) {
-	return Effect.Do.pipe(
-		Effect.bind("queue", () =>
-			PersistedQueue.make({
-				name: "dispatches-durable",
-				schema: QueuedDispatchSchema,
-				maxAttempts: 3,
-				retrySchedule: Schedule.spaced("20 millis"),
-			}),
-		),
-		Effect.bind("firstOfferId", ({ queue }) => queue.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" })),
-		// Duplicate offer with the same idempotencyKey is safely ignored
-		Effect.bind("dupId", ({ queue }) => queue.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" })),
-		Effect.bind("outcome", ({ queue }) =>
-			queue.take((item, metadata) =>
-				metadata.attempts === 1
-					? Effect.fail(new TransientSmtpError({ attempt: metadata.attempts, reason: "Upstream SMTP 421 busy" }))
-					: Effect.succeed({ deliveredId: metadata.id, attemptsUsed: metadata.attempts, recipient: item.recipient, subject: item.subject }),
-			),
-		),
+	return PersistedQueue.make({
+		name: "dispatches-durable",
+		schema: QueuedDispatchSchema,
+		maxAttempts: 3,
+		retrySchedule: Schedule.spaced("20 millis"),
+	}).pipe(
+		Effect.flatMap((queue) => {
+			return queue
+				.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
+				.pipe(
+					// Duplicate offer with the same idempotencyKey is safely ignored
+					Effect.flatMap((firstOfferId) => {
+						return queue.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" }).pipe(
+							Effect.flatMap((duplicateOfferId) => {
+								const takeOnce = queue.take((item, metadata) =>
+									metadata.attempts === 1
+										? Effect.fail(new TransientSmtpError({ attempt: metadata.attempts, reason: "Upstream SMTP 421 busy" }))
+										: Effect.succeed({ deliveredId: metadata.id, attemptsUsed: metadata.attempts, recipient: item.recipient, subject: item.subject }),
+								);
+
+								// The store re-queues the failed item, so taking again observes attempt 2
+								return takeOnce.pipe(
+									Effect.catchTag("TransientSmtpError", () => takeOnce),
+									Effect.map((outcome) => ({
+										firstOfferId,
+										duplicateOfferId,
+										deduplicated: duplicateOfferId === firstOfferId,
+										outcome,
+									})),
+								);
+							}),
+						);
+					}),
+				);
+		}),
 		Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))),
 	);
 }`,
@@ -655,15 +667,8 @@ interface TenantState {
 }
 
 export const TenantDispatcherLive = TenantDispatcher.toLayer(
-	Effect.Do.pipe(
-		Effect.bind("address", () => Entity.CurrentAddress),
-		Effect.bind("stateRef", () =>
-			Ref.make<TenantState>({
-				totalSent: 0,
-				subjects: [],
-			}),
-		),
-		Effect.map(({ address, stateRef }) =>
+	Effect.all([Entity.CurrentAddress, Ref.make<TenantState>({ totalSent: 0, subjects: [] })], { concurrency: 1 }).pipe(
+		Effect.map(([address, stateRef]) =>
 			TenantDispatcher.of({
 				Dispatch: (envelope) =>
 					Ref.modify(
@@ -756,18 +761,21 @@ export interface PipelineRulePair {
 
 export const PIPELINE_RULES: ReadonlyArray<PipelineRulePair> = [
 	{
-		id: "sequential-bindings",
+		id: "sequential-dependencies",
 		topic: "Chaining Multiple Dependent Values",
 		avoid: `Effect.gen(function*() {
   const user = yield* findUser(id)
   const quota = yield* loadQuota(user.orgId)
   return { user, quota }
 })`,
-		prefer: `Effect.Do.pipe(
-  Effect.bind("user", () => findUser(id)),
-  Effect.bind("quota", ({ user }) => loadQuota(user.orgId))
+		prefer: `findUser(id).pipe(
+  Effect.flatMap((user) => {
+    return loadQuota(user.orgId).pipe(
+      Effect.map((quota) => ({ user, quota }))
+    );
+  })
 )`,
-		explanation: "Effect.Do creates an empty scope object and Effect.bind accumulates named values with full TypeScript inference—no generator state machine needed.",
+		explanation: "Effect.flatMap hands the previous success value straight to the next step, so dependent calls compose as a plain pipeline—no Effect.Do, no Effect.bind, no generator state machine.",
 	},
 	{
 		id: "side-effects",
