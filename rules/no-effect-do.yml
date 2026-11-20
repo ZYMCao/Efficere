@@ -1,0 +1,10 @@
+id: no-effect-do
+language: TypeScript
+severity: error
+message: "Do not use Effect Do-notation (Effect.Do / Effect.bind / Effect.bindTo / Effect.let). Use Effect.flatMap for sequential dependencies and Effect.all for independent effects."
+rule:
+    any:
+        - pattern: Effect.Do
+        - pattern: Effect.bind($$$)
+        - pattern: Effect.bindTo($$$)
+        - pattern: Effect.let($$$)

@@ -1,0 +1,44 @@
+id: no-effect-do
+valid:
+    - |
+        fetchUser(id).pipe(
+          Effect.flatMap((user) => fetchOrders(user.id))
+        );
+    - |
+        Effect.all(
+          {
+            user: fetchUser(id),
+            prefs: fetchPrefs(id),
+          },
+          { concurrency: 1 }
+        ).pipe(
+          Effect.map(({ user, prefs }) => ({ user, prefs }))
+        );
+    - "const bound = fn.bind(null, 1);"
+    - "const letValue = obj.let(1);"
+    - |
+        Option.Do.pipe(
+          Option.bind("a", () => Option.some(1)),
+          Option.bind("b", ({ a }) => Option.some(a + 1))
+        );
+invalid:
+    - |
+        Effect.Do.pipe(
+          Effect.map(() => 42)
+        );
+    - |
+        Effect.Do.pipe(
+          Effect.bind("user", () => fetchUser(id)),
+          Effect.bind("orders", ({ user }) => fetchOrders(user.id))
+        );
+    - |
+        fetchUser(id).pipe(
+          Effect.bindTo("user"),
+          Effect.let("label", ({ user }) => user.name)
+        );
+    - |
+        Effect.bind("x", () => Effect.succeed(1));
+    - |
+        Effect.bindTo("x");
+    - |
+        Effect.let("x", () => 1);

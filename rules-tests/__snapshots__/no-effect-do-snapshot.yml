@@ -1,0 +1,38 @@
+id: no-effect-do
+snapshots:
+    "Effect.Do.pipe(\n  Effect.bind(\"user\", () => fetchUser(id)),\n  Effect.bind(\"orders\", ({ user }) => fetchOrders(user.id))\n);\n":
+        labels:
+            - source: Effect.Do
+              style: primary
+              start: 0
+              end: 9
+    "Effect.Do.pipe(\n  Effect.map(() => 42)\n);\n":
+        labels:
+            - source: Effect.Do
+              style: primary
+              start: 0
+              end: 9
+    "Effect.bind(\"x\", () => Effect.succeed(1));\n":
+        labels:
+            - source: Effect.bind("x", () => Effect.succeed(1))
+              style: primary
+              start: 0
+              end: 41
+    "Effect.bindTo(\"x\");\n":
+        labels:
+            - source: Effect.bindTo("x")
+              style: primary
+              start: 0
+              end: 18
+    "Effect.let(\"x\", () => 1);\n":
+        labels:
+            - source: Effect.let("x", () => 1)
+              style: primary
+              start: 0
+              end: 24
+    "fetchUser(id).pipe(\n  Effect.bindTo(\"user\"),\n  Effect.let(\"label\", ({ user }) => user.name)\n);\n":
+        labels:
+            - source: Effect.bindTo("user")
+              style: primary
+              start: 22
+              end: 43
