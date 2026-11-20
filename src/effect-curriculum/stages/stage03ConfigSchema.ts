@@ -1,4 +1,4 @@
-import { Config, ConfigProvider, Context, Effect, Exit, Layer, Redacted, Schema, pipe } from "effect";
+import { Config, ConfigProvider, Context, Effect, Exit, Layer, Redacted, Schema } from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
 export interface Stage03Input {
@@ -37,8 +37,7 @@ export const SettingsLayer = Layer.effect(
 );
 
 export function validateAndAttachConfig(rawPayload: unknown) {
-	return pipe(
-		Effect.Do,
+	return Effect.Do.pipe(
 		Effect.bind("settings", () => SettingsService),
 		Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
 		Effect.map(({ settings, payload }) => ({
@@ -82,8 +81,7 @@ export function runStage03(input: Stage03Input): Promise<StageExecutionResult> {
 		channel: "email",
 	};
 
-	const runnable = pipe(
-		validateAndAttachConfig(rawPayload),
+	const runnable = validateAndAttachConfig(rawPayload).pipe(
 		Effect.tap((res) =>
 			Effect.sync(() => {
 				pushTrace("Config.Redacted", "String(settings.apiToken)", `Safely logged as ${res.tokenRedactedPreview} (actual len=${res.tokenLength})`);

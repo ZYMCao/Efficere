@@ -1,4 +1,4 @@
-import { Effect, Layer, Ref, Schedule, Schema, pipe } from "effect";
+import { Effect, Layer, Ref, Schedule, Schema } from "effect";
 import { PersistedQueue } from "effect/persistence";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
@@ -36,8 +36,7 @@ export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 	}
 
 	// Pure pipeline building PersistedQueue, offering with idempotency key, and taking with scoped retry
-	const program = pipe(
-		Effect.Do,
+	const program = Effect.Do.pipe(
 		Effect.bind("attemptLog", () => Ref.make<Array<string>>([])),
 		Effect.bind("queue", () =>
 			PersistedQueue.make({
@@ -48,23 +47,20 @@ export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 			}),
 		),
 		Effect.bind("firstOfferId", ({ queue }) =>
-			pipe(
-				queue.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" }),
-				Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (primary)", `Enqueued id="${id}" with deduplicate="untilRemoved"`))),
-			),
+			queue
+				.offer({ recipient, subject: "Invoice #9042 Ready" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
+				.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (primary)", `Enqueued id="${id}" with deduplicate="untilRemoved"`)))),
 		),
 		Effect.bind("duplicateOfferId", ({ queue }) =>
 			sendDuplicateOffer
-				? pipe(
-						queue.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" }),
-						Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (duplicate)", `Deduplicated offer id="${id}" — ignored by store`, "warn"))),
-					)
+				? queue
+						.offer({ recipient, subject: "Invoice #9042 Duplicate" }, { id: idempotencyKey, deduplicate: "untilRemoved" })
+						.pipe(Effect.tap((id) => Effect.sync(() => pushTrace("PersistedQueue", "queue.offer (duplicate)", `Deduplicated offer id="${id}" — ignored by store`, "warn"))))
 				: Effect.succeed<string | null>(null),
 		),
 		Effect.bind("workerOutcome", ({ queue, attemptLog }) => {
 			const takeOnce = queue.take((item, metadata) =>
-				pipe(
-					Ref.update(attemptLog, (xs) => [...xs, `attempt=${metadata.attempts} id=${metadata.id}`]),
+				Ref.update(attemptLog, (xs) => [...xs, `attempt=${metadata.attempts} id=${metadata.id}`]).pipe(
 					Effect.flatMap(() => {
 						if (failFirstAttempt && metadata.attempts === 1) {
 							pushTrace("PersistedQueue.take", `Attempt #${metadata.attempts} failed`, `TransientSmtpError -> PersistedQueue schedules automatic retry`, "warn");
@@ -87,10 +83,7 @@ export function runStage07(input: Stage07Input): Promise<StageExecutionResult> {
 			);
 
 			// Retry outer worker loop when attempt 1 fails so we observe attempt 2 from the store
-			return pipe(
-				takeOnce,
-				Effect.catchTag("TransientSmtpError", () => takeOnce),
-			);
+			return takeOnce.pipe(Effect.catchTag("TransientSmtpError", () => takeOnce));
 		}),
 		Effect.bind("attemptsRecorded", ({ attemptLog }) => Ref.get(attemptLog)),
 		Effect.map(({ firstOfferId, duplicateOfferId, workerOutcome, attemptsRecorded }) => ({

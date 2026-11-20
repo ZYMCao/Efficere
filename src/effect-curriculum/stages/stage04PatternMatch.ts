@@ -1,4 +1,4 @@
-import { Effect, Exit, Match, Schema, pipe } from "effect";
+import { Effect, Exit, Match, Schema } from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
 export interface Stage04Input {
@@ -91,8 +91,7 @@ export function runStage04(input: Stage04Input): Promise<StageExecutionResult> {
 				? { _tag: "WebhookPush", endpoint: target, retries: urgency }
 				: { _tag: "SendEmail", to: target, subject: "Critical Settlement", urgency };
 
-	const program = pipe(
-		Schema.decodeUnknownEffect(DispatchCommandSchema)(rawCommand),
+	const program = Schema.decodeUnknownEffect(DispatchCommandSchema)(rawCommand).pipe(
 		Effect.tap((cmd) => Effect.sync(() => pushTrace("Schema", "Decoded TaggedClass", `Matched union variant ${cmd._tag}`))),
 		Effect.map((cmd) => {
 			const plan = computeRoutingPlan(cmd);

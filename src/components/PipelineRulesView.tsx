@@ -8,8 +8,8 @@ export function PipelineRulesView(): JSX.Element {
 			<div class="bg-white border border-slate-200 rounded-xl p-6">
 				<h1 class="font-display text-2xl font-bold text-slate-900 text-balance">Pipeline-Only Discipline: Zero Generators, Zero Yields</h1>
 				<p class="text-sm text-slate-600 mt-2 max-w-[70ch] leading-relaxed">
-					Every stage in this curriculum avoids Effect.gen and yield*. Pure pipelines compose small combinators directly through pipe(...), preserving static variance in Effect&lt;A, E, R&gt; and keeping
-					control flow explicit.
+					Every stage in this curriculum avoids Effect.gen and yield*. Pure pipelines compose small combinators directly through .pipe(...) method chaining, preserving static variance in Effect&lt;A, E, R&gt;
+					and keeping control flow explicit.
 				</p>
 			</div>
 

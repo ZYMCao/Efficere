@@ -1,4 +1,4 @@
-import { Effect, Match, Schema, Stream, pipe } from "effect";
+import { Effect, Match, Schema, Stream } from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 import { DispatchCommandSchema, computeRoutingPlan } from "./stage04PatternMatch";
 
@@ -35,8 +35,7 @@ export function runStage05(input: Stage05Input): Promise<StageExecutionResult> {
 	pushTrace("Stream", "Stream.fromIterable", `Queued ${sampleBatch.length} raw events (concurrency=${concurrency}, minUrgency=${minUrgency})`);
 
 	// Pure pipeline Stream: decode -> filter -> concurrent mapEffect -> runCollect
-	const pipeline = pipe(
-		Stream.fromIterable(sampleBatch),
+	const pipeline = Stream.fromIterable(sampleBatch).pipe(
 		Stream.mapEffect((raw) => Schema.decodeUnknownEffect(DispatchCommandSchema)(raw), {
 			concurrency,
 		}),
@@ -48,8 +47,7 @@ export function runStage05(input: Stage05Input): Promise<StageExecutionResult> {
 		),
 		Stream.mapEffect(
 			(cmd) =>
-				pipe(
-					Effect.sleep("15 millis"),
+				Effect.sleep("15 millis").pipe(
 					Effect.map(() => {
 						const plan = computeRoutingPlan(cmd);
 						pushTrace("Stream.mapEffect", `Processed ${cmd._tag}`, `-> ${plan.transport} (${plan.target})`);

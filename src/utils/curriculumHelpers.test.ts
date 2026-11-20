@@ -33,9 +33,10 @@ test("buildDefaultFieldValues populates every field key", () => {
 	}
 });
 
-test("Catalog code snippets contain zero Effect.gen or yield*", () => {
+test("Catalog code snippets contain zero Effect.gen, yield*, or pipe(...) function calls", () => {
 	for (const stage of CURRICULUM_STAGES) {
 		assert.equal(stage.code.includes("Effect.gen"), false, `${stage.id} snippet has Effect.gen`);
 		assert.equal(stage.code.includes("yield*"), false, `${stage.id} snippet has yield*`);
+		assert.equal(/(?<![.\w$])pipe\s*\(/.test(stage.code), false, `${stage.id} snippet calls pipe(...); use .pipe(...) method chaining`);
 	}
 });

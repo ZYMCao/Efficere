@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, pipe } from "effect";
+import { Context, Effect, Layer } from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
 export interface Stage01Input {
@@ -62,8 +62,7 @@ export function runStage01(input: Stage01Input): Promise<StageExecutionResult> {
 	const AppLayer = Layer.mergeAll(ClockLive, AuditLogLive);
 
 	// 4. Wire dependencies at the edge with Effect.provide, then runPromise
-	const runnable = pipe(
-		recordDispatch(recipient, message),
+	const runnable = recordDispatch(recipient, message).pipe(
 		Effect.tap((res) => Effect.sync(() => pushTrace("Effect", "Effect.runPromise", `Materialized dispatch ${res.id}`))),
 		Effect.provide(AppLayer),
 	);

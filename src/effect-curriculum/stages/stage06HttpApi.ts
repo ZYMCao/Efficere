@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Ref, Schema, pipe } from "effect";
+import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpRouter, HttpServer } from "effect/http";
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "effect/http-api";
 import type { StageExecutionResult, TraceEvent } from "../types";
@@ -57,44 +57,37 @@ export class DispatchStore extends Context.Service<
 
 export const DispatchStoreLive = Layer.effect(
 	DispatchStore,
-	pipe(
-		Ref.make<Map<string, typeof DispatchItemSchema.Type>>(
-			new Map([
-				[
-					"disp-101",
-					{
-						id: "disp-101",
-						recipient: "ops@acme.dev",
-						subject: "Initial Ledger Seed",
-						status: "delivered",
-					},
-				],
-			]),
-		),
+	Ref.make<Map<string, typeof DispatchItemSchema.Type>>(
+		new Map([
+			[
+				"disp-101",
+				{
+					id: "disp-101",
+					recipient: "ops@acme.dev",
+					subject: "Initial Ledger Seed",
+					status: "delivered",
+				},
+			],
+		]),
+	).pipe(
 		Effect.map((storeRef) => {
-			const snapshot = pipe(
-				Ref.get(storeRef),
-				Effect.map((map) => Array.from(map.values())),
-			);
+			const snapshot = Ref.get(storeRef).pipe(Effect.map((map) => Array.from(map.values())));
 			return {
 				create: (recipient, subject) =>
-					pipe(
-						Ref.modify(storeRef, (map) => {
-							const id = `disp-${101 + map.size}`;
-							const item: typeof DispatchItemSchema.Type = {
-								id,
-								recipient,
-								subject,
-								status: "queued",
-							};
-							const next = new Map(map);
-							next.set(id, item);
-							return [item, next] as const;
-						}),
-					),
+					Ref.modify(storeRef, (map) => {
+						const id = `disp-${101 + map.size}`;
+						const item: typeof DispatchItemSchema.Type = {
+							id,
+							recipient,
+							subject,
+							status: "queued",
+						};
+						const next = new Map(map);
+						next.set(id, item);
+						return [item, next] as const;
+					}).pipe(),
 				findById: (id) =>
-					pipe(
-						Ref.get(storeRef),
+					Ref.get(storeRef).pipe(
 						Effect.flatMap((map) => {
 							const found = map.get(id);
 							return found ? Effect.succeed(found) : Effect.fail(new DispatchNotFound({ id }));
@@ -108,10 +101,7 @@ export const DispatchStoreLive = Layer.effect(
 
 // 4. Implement HttpApiGroup handlers via pure pipelines
 export const DispatchGroupLive = HttpApiBuilder.group(LedgerApi, "dispatches", (handlers) =>
-	pipe(
-		DispatchStore,
-		Effect.map((store) => handlers.handle("create", ({ payload }) => store.create(payload.recipient, payload.subject)).handle("getById", ({ params }) => store.findById(params.id))),
-	),
+	DispatchStore.pipe(Effect.map((store) => handlers.handle("create", ({ payload }) => store.create(payload.recipient, payload.subject)).handle("getById", ({ params }) => store.findById(params.id)))),
 );
 
 // 5. Build Web-standard Request -> Response handler with HttpRouter.toWebHandler
@@ -154,11 +144,9 @@ export function runStage06(input: Stage06Input): Promise<StageExecutionResult> {
 	const runEffect = Effect.acquireUseRelease(
 		Effect.succeed(webApp),
 		({ handler }) =>
-			pipe(
-				Effect.promise(() => handler(request)),
+			Effect.promise(() => handler(request)).pipe(
 				Effect.flatMap((response) => {
-					return pipe(
-						Effect.promise(() => response.text()),
+					return Effect.promise(() => response.text()).pipe(
 						Effect.map((rawText) => {
 							let parsedBody: unknown = rawText;
 							try {

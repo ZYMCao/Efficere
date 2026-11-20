@@ -1,4 +1,4 @@
-import { Effect, Layer, Ref, Schema, pipe } from "effect";
+import { Effect, Layer, Ref, Schema } from "effect";
 import { Entity, TestRunner } from "effect/cluster";
 import { Rpc } from "effect/rpc";
 import type { StageExecutionResult, TraceEvent } from "../types";
@@ -41,8 +41,7 @@ interface TenantState {
 }
 
 export const TenantDispatcherLive = TenantDispatcher.toLayer(
-	pipe(
-		Effect.Do,
+	Effect.Do.pipe(
 		Effect.bind("address", () => Entity.CurrentAddress),
 		Effect.bind("stateRef", () =>
 			Ref.make<TenantState>({
@@ -53,55 +52,51 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
 		Effect.map(({ address, stateRef }) =>
 			TenantDispatcher.of({
 				Dispatch: (envelope) =>
-					pipe(
-						Ref.modify(
-							stateRef,
-							(
-								state,
-							): readonly [
-								Effect.Effect<
-									{
-										readonly entityAddress: string;
-										readonly shardId: string;
-										readonly sequenceNo: number;
-										readonly subject: string;
-									},
-									DailyLimitReached
-								>,
-								TenantState,
-							] => {
-								if (state.totalSent >= 3) {
-									return [
-										Effect.fail(
-											new DailyLimitReached({
-												tenantId: address.entityId,
-												sentCount: state.totalSent,
-											}),
-										),
-										state,
-									];
-								}
-								const nextSeq = state.totalSent + 1;
-								const nextState: TenantState = {
-									totalSent: nextSeq,
-									subjects: [...state.subjects, envelope.payload.subject],
-								};
+					Ref.modify(
+						stateRef,
+						(
+							state,
+						): readonly [
+							Effect.Effect<
+								{
+									readonly entityAddress: string;
+									readonly shardId: string;
+									readonly sequenceNo: number;
+									readonly subject: string;
+								},
+								DailyLimitReached
+							>,
+							TenantState,
+						] => {
+							if (state.totalSent >= 3) {
 								return [
-									Effect.succeed({
-										entityAddress: `${address.entityType}/${address.entityId}`,
-										shardId: String(address.shardId),
-										sequenceNo: nextSeq,
-										subject: envelope.payload.subject,
-									}),
-									nextState,
+									Effect.fail(
+										new DailyLimitReached({
+											tenantId: address.entityId,
+											sentCount: state.totalSent,
+										}),
+									),
+									state,
 								];
-							},
-						),
-						Effect.flatten,
-					),
+							}
+							const nextSeq = state.totalSent + 1;
+							const nextState: TenantState = {
+								totalSent: nextSeq,
+								subjects: [...state.subjects, envelope.payload.subject],
+							};
+							return [
+								Effect.succeed({
+									entityAddress: `${address.entityType}/${address.entityId}`,
+									shardId: String(address.shardId),
+									sequenceNo: nextSeq,
+									subject: envelope.payload.subject,
+								}),
+								nextState,
+							];
+						},
+					).pipe(Effect.flatten),
 				GetLedger: () =>
-					pipe(
-						Ref.get(stateRef),
+					Ref.get(stateRef).pipe(
 						Effect.map((state) => ({
 							entityId: address.entityId,
 							totalSent: state.totalSent,
@@ -135,15 +130,13 @@ export function runStage08(input: Stage08Input): Promise<StageExecutionResult> {
 	const ClusterLayer = TenantDispatcherLive.pipe(Layer.provideMerge(TestRunner.layer));
 
 	// Pure pipeline: obtain sharded entity client -> send concurrent bursts -> read isolated actor state
-	const program = pipe(
-		TenantDispatcher.client,
+	const program = TenantDispatcher.client.pipe(
 		Effect.flatMap((makeClient) => {
 			const acmeClient = makeClient(tenantA);
 			const globexClient = makeClient(tenantB);
 
 			const acmeCalls = Array.from({ length: burstCount }, (_, idx) =>
-				pipe(
-					acmeClient.Dispatch({ subject: `Acme Event #${idx + 1}` }),
+				acmeClient.Dispatch({ subject: `Acme Event #${idx + 1}` }).pipe(
 					Effect.tap((res) => Effect.sync(() => pushTrace("Cluster.Entity", `${res.entityAddress}`, `Seq=${res.sequenceNo} on shard=${res.shardId}: "${res.subject}"`))),
 					Effect.catchTag("DailyLimitReached", (err) =>
 						Effect.sync(() => {
@@ -154,13 +147,11 @@ export function runStage08(input: Stage08Input): Promise<StageExecutionResult> {
 				),
 			);
 
-			const globexCall = pipe(
-				globexClient.Dispatch({ subject: "Globex Settlement #1" }),
-				Effect.tap((res) => Effect.sync(() => pushTrace("Cluster.Entity", `${res.entityAddress}`, `Isolated actor Seq=${res.sequenceNo} on shard=${res.shardId}`))),
-			);
+			const globexCall = globexClient
+				.Dispatch({ subject: "Globex Settlement #1" })
+				.pipe(Effect.tap((res) => Effect.sync(() => pushTrace("Cluster.Entity", `${res.entityAddress}`, `Isolated actor Seq=${res.sequenceNo} on shard=${res.shardId}`))));
 
-			return pipe(
-				Effect.Do,
+			return Effect.Do.pipe(
 				Effect.bind("acmeDispatches", () => Effect.all(acmeCalls, { concurrency: "unbounded" })),
 				Effect.bind("globexDispatches", () => Effect.all([globexCall])),
 				Effect.bind("acmeLedger", () => acmeClient.GetLedger()),

@@ -11,9 +11,9 @@ export const CURRICULUM_STAGES: ReadonlyArray<CurriculumStage> = [
 		summary: "Every Effect program is an immutable blueprint Effect<A, E, R>—nothing executes until Layer dependencies are provided at the application edge.",
 		mentalModel:
 			"Think of Effect<A, E, R> as a typed recipe: R is the ingredients needed (Context.Service), E is the typed failure modes, and A is the success value. Layer.succeed and Layer.mergeAll satisfy R once at startup.",
-		pipelineSpotlight: "Use Service.use(fn) with Effect.flatMap, Effect.tap, and Effect.map inside pipe(...) so dependencies flow implicitly without nesting callbacks.",
+		pipelineSpotlight: "Use Service.use(fn) with Effect.map and Effect.tap chained through .pipe(...) so dependencies flow implicitly without nesting callbacks.",
 		bestPractice: "Keep Effect.runPromise strictly at the outermost boundary (main.ts or server bootstrap). Domain functions should return Effect values with explicit R requirements.",
-		code: `import { Context, Effect, Layer, pipe } from "effect";
+		code: `import { Context, Effect, Layer } from "effect";
 
 // 1. Define services using Effect v4 Context.Service
 export class LedgerClock extends Context.Service<LedgerClock, { readonly nowIso: Effect.Effect<string> }>()("LedgerClock") {}
@@ -45,10 +45,9 @@ const AuditLogLive = Layer.succeed(AuditLog, {
 const AppLayer = Layer.mergeAll(ClockLive, AuditLogLive);
 
 // 4. Wire dependencies at the edge with Effect.provide, then runPromise
-const runnable = pipe(recordDispatch("ops@acme.dev", "Ledger booted cleanly"), Effect.provide(AppLayer));
+const runnable = recordDispatch("ops@acme.dev", "Ledger booted cleanly").pipe(Effect.provide(AppLayer));
 
-Effect.runPromise(runnable);
-`,
+Effect.runPromise(runnable);`,
 		fields: [
 			{
 				key: "recipient",
@@ -75,7 +74,7 @@ Effect.runPromise(runnable);
 		mentalModel: "Nullability belongs in Option<A>, while recoverable failures belong in the E channel. Effect.Do starts an empty record context; Effect.bind attaches named results without generator syntax.",
 		pipelineSpotlight: "Effect.Do.pipe(Effect.bind('a', ...), Effect.bind('b', ({ a }) => ...)) is the direct pipeline equivalent of sequential bindings—zero yield*, 100% type-inferred.",
 		bestPractice: "Recover selectively with Effect.catchTag('QuotaExceeded', handler) so unhandled errors (RecipientNotFound) remain visible in the function signature.",
-		code: `import { Context, Effect, Option, Schema, pipe } from "effect";
+		code: `import { Context, Effect, Option, Schema } from "effect";
 
 // 1. Schema-backed typed domain errors (no throw, no untyped catch)
 export class RecipientNotFound extends Schema.TaggedError<RecipientNotFound>()("RecipientNotFound", { recipientId: Schema.String }) {}
@@ -101,12 +100,10 @@ export class RecipientRepo extends Context.Service<
 
 // 2. Pure pipeline using Effect.Do + Effect.bind + Option + typed errors
 export function prepareDispatch(recipientId: string, costUnits: number) {
-	return pipe(
-		Effect.Do,
+	return Effect.Do.pipe(
 		Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
 		Effect.bind("recipient", ({ maybeRecipient }) =>
-			pipe(
-				maybeRecipient,
+			maybeRecipient.pipe(
 				Option.match({
 					onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
 					onSome: Effect.succeed,
@@ -133,8 +130,7 @@ export function prepareDispatch(recipientId: string, costUnits: number) {
 }
 
 // 3. Demonstrate typed error channel inspection + recovery via Effect.catchTag
-const resilientDispatch = pipe(
-	prepareDispatch("acct-low", 5),
+const resilientDispatch = prepareDispatch("acct-low", 5).pipe(
 	Effect.catchTag("QuotaExceeded", (err) =>
 		Effect.succeed({
 			recipientId: err.recipientId,
@@ -144,8 +140,7 @@ const resilientDispatch = pipe(
 			recoveredFrom: "QuotaExceeded",
 		}),
 	),
-);
-`,
+);`,
 		fields: [
 			{
 				key: "recipientId",
@@ -179,7 +174,7 @@ const resilientDispatch = pipe(
 			"Config is itself an Effect<T, ConfigError>. Wrapping secrets in Config.Redacted prevents accidental token leaks in logs, while Schema.decodeUnknownEffect turns unknown JSON into typed domain values in the E channel.",
 		pipelineSpotlight: "Pass Config.all({ ... }) directly into Layer.effect(SettingsService, ...)—in Effect v4, Config values are natively Effects!",
 		bestPractice: "Always inject ConfigProvider via ConfigProvider.layer(...) in tests instead of mutating process.env globally.",
-		code: `import { Config, Context, Effect, Layer, Redacted, Schema, pipe } from "effect";
+		code: `import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 
 // 1. Declarative Schema for boundary validation
 export const DispatchPayloadSchema = Schema.Struct({
@@ -209,8 +204,7 @@ export const SettingsLayer = Layer.effect(
 );
 
 export function validateAndAttachConfig(rawPayload: unknown) {
-	return pipe(
-		Effect.Do,
+	return Effect.Do.pipe(
 		Effect.bind("settings", () => SettingsService),
 		Effect.bind("payload", () => Schema.decodeUnknownEffect(DispatchPayloadSchema)(rawPayload)),
 		Effect.map(({ settings, payload }) => ({
@@ -222,8 +216,7 @@ export function validateAndAttachConfig(rawPayload: unknown) {
 			payload,
 		})),
 	);
-}
-`,
+}`,
 		fields: [
 			{
 				key: "envRegion",
@@ -322,8 +315,7 @@ export function classifyLatencyTier(slaMs: number) {
 		),
 		Match.orElse(() => "batch"),
 	);
-}
-`,
+}`,
 		fields: [
 			{
 				key: "commandType",
@@ -361,13 +353,12 @@ export function classifyLatencyTier(slaMs: number) {
 		mentalModel: "A Stream<A, E, R> is to multiple values what Effect<A, E, R> is to one value. Downstream consumers pull at their own pace, giving automatic backpressure.",
 		pipelineSpotlight: "Stream.mapEffect(fn, { concurrency }) runs up to N fibers in parallel while preserving backpressure and clean resource finalization.",
 		bestPractice: "Always set explicit { concurrency } bounds on external I/O stages inside Stream.mapEffect instead of spawning unbounded Promise.all batches.",
-		code: `import { Effect, Match, Schema, Stream, pipe } from "effect";
+		code: `import { Effect, Match, Schema, Stream } from "effect";
 import { DispatchCommandSchema, computeRoutingPlan } from "./stage04PatternMatch";
 
 // Pure pipeline Stream: decode -> filter -> concurrent mapEffect -> runCollect
 export function processDispatchBatch(rawBatch: ReadonlyArray<unknown>, concurrency: number, minUrgency: number) {
-	return pipe(
-		Stream.fromIterable(rawBatch),
+	return Stream.fromIterable(rawBatch).pipe(
 		Stream.mapEffect((raw) => Schema.decodeUnknownEffect(DispatchCommandSchema)(raw), {
 			concurrency,
 		}),
@@ -377,18 +368,10 @@ export function processDispatchBatch(rawBatch: ReadonlyArray<unknown>, concurren
 				Match.orElse(() => true),
 			),
 		),
-		Stream.mapEffect(
-			(cmd) =>
-				pipe(
-					Effect.sleep("15 millis"),
-					Effect.map(() => ({ tag: cmd._tag, ...computeRoutingPlan(cmd) })),
-				),
-			{ concurrency },
-		),
+		Stream.mapEffect((cmd) => Effect.sleep("15 millis").pipe(Effect.map(() => ({ tag: cmd._tag, ...computeRoutingPlan(cmd) }))), { concurrency }),
 		Stream.runCollect,
 	);
-}
-`,
+}`,
 		fields: [
 			{
 				key: "concurrency",
@@ -416,9 +399,9 @@ export function processDispatchBatch(rawBatch: ReadonlyArray<unknown>, concurren
 		summary: "Define contract-first HTTP endpoints with typed params, payloads, and error status codes using HttpApi, then bind handlers with HttpApiBuilder.",
 		mentalModel:
 			"HttpApi separates the API specification (schemas, routes, HTTP statuses, OpenAPI metadata) from server implementation (HttpApiBuilder.group) and transport (NodeHttpServer.layer or HttpRouter.toWebHandler).",
-		pipelineSpotlight: "Resolve long-lived store services once at Layer build time inside HttpApiBuilder.group using pipe(DispatchStore, Effect.map((store) => handlers.handle(...))).",
+		pipelineSpotlight: "Resolve long-lived store services once at Layer build time inside HttpApiBuilder.group using DispatchStore.pipe(Effect.map((store) => handlers.handle(...))).",
 		bestPractice: "Annotate domain error schemas with HttpApiSchema.status(404) so returning Effect.fail(new DispatchNotFound(...)) automatically serializes a clean 404 JSON response.",
-		code: `import { Context, Effect, Layer, Ref, Schema, pipe } from "effect";
+		code: `import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "effect/http-api";
 
@@ -469,44 +452,37 @@ export class DispatchStore extends Context.Service<
 
 export const DispatchStoreLive = Layer.effect(
 	DispatchStore,
-	pipe(
-		Ref.make<Map<string, typeof DispatchItemSchema.Type>>(
-			new Map([
-				[
-					"disp-101",
-					{
-						id: "disp-101",
-						recipient: "ops@acme.dev",
-						subject: "Initial Ledger Seed",
-						status: "delivered",
-					},
-				],
-			]),
-		),
+	Ref.make<Map<string, typeof DispatchItemSchema.Type>>(
+		new Map([
+			[
+				"disp-101",
+				{
+					id: "disp-101",
+					recipient: "ops@acme.dev",
+					subject: "Initial Ledger Seed",
+					status: "delivered",
+				},
+			],
+		]),
+	).pipe(
 		Effect.map((storeRef) => {
-			const snapshot = pipe(
-				Ref.get(storeRef),
-				Effect.map((map) => Array.from(map.values())),
-			);
+			const snapshot = Ref.get(storeRef).pipe(Effect.map((map) => Array.from(map.values())));
 			return {
 				create: (recipient, subject) =>
-					pipe(
-						Ref.modify(storeRef, (map) => {
-							const id = \`disp-\${101 + map.size}\`;
-							const item: typeof DispatchItemSchema.Type = {
-								id,
-								recipient,
-								subject,
-								status: "queued",
-							};
-							const next = new Map(map);
-							next.set(id, item);
-							return [item, next] as const;
-						}),
-					),
+					Ref.modify(storeRef, (map) => {
+						const id = \`disp-\${101 + map.size}\`;
+						const item: typeof DispatchItemSchema.Type = {
+							id,
+							recipient,
+							subject,
+							status: "queued",
+						};
+						const next = new Map(map);
+						next.set(id, item);
+						return [item, next] as const;
+					}).pipe(),
 				findById: (id) =>
-					pipe(
-						Ref.get(storeRef),
+					Ref.get(storeRef).pipe(
 						Effect.flatMap((map) => {
 							const found = map.get(id);
 							return found ? Effect.succeed(found) : Effect.fail(new DispatchNotFound({ id }));
@@ -520,15 +496,11 @@ export const DispatchStoreLive = Layer.effect(
 
 // 4. Implement HttpApiGroup handlers via pure pipelines
 export const DispatchGroupLive = HttpApiBuilder.group(LedgerApi, "dispatches", (handlers) =>
-	pipe(
-		DispatchStore,
-		Effect.map((store) => handlers.handle("create", ({ payload }) => store.create(payload.recipient, payload.subject)).handle("getById", ({ params }) => store.findById(params.id))),
-	),
+	DispatchStore.pipe(Effect.map((store) => handlers.handle("create", ({ payload }) => store.create(payload.recipient, payload.subject)).handle("getById", ({ params }) => store.findById(params.id)))),
 );
 
 // 5. Build Web-standard Request -> Response handler with HttpRouter.toWebHandler
-export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(Layer.provide(DispatchGroupLive), Layer.provide(DispatchStoreLive), Layer.provide(HttpServer.layerServices));
-`,
+export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(Layer.provide(DispatchGroupLive), Layer.provide(DispatchStoreLive), Layer.provide(HttpServer.layerServices));`,
 		fields: [
 			{
 				key: "method",
@@ -573,7 +545,7 @@ export const ApiLayer = HttpApiBuilder.layer(LedgerApi).pipe(Layer.provide(Dispa
 			"PersistedQueue.take opens a Scope around each item. If the handler Effect succeeds, the store marks the item complete; if it fails, the store increments attempts and re-queues it after retrySchedule.",
 		pipelineSpotlight: "Pass { id: idempotencyKey, deduplicate: 'untilRemoved' } to queue.offer so duplicate webhooks or retries never enqueue duplicate work.",
 		bestPractice: "Develop with PersistedQueue.layerStoreMemory and swap to PersistedQueue.layerStoreSql or layerStoreRedis at the edge—handler code stays identical.",
-		code: `import { Effect, Layer, Schedule, Schema, pipe } from "effect";
+		code: `import { Effect, Layer, Schedule, Schema } from "effect";
 import { PersistedQueue } from "effect/persistence";
 
 export const QueuedDispatchSchema = Schema.Struct({
@@ -585,8 +557,7 @@ export class TransientSmtpError extends Schema.TaggedError<TransientSmtpError>()
 
 // Pure pipeline building PersistedQueue, offering with idempotency key, and taking with scoped retry
 export function durableDispatchFlow(idempotencyKey: string, recipient: string) {
-	return pipe(
-		Effect.Do,
+	return Effect.Do.pipe(
 		Effect.bind("queue", () =>
 			PersistedQueue.make({
 				name: "dispatches-durable",
@@ -605,9 +576,9 @@ export function durableDispatchFlow(idempotencyKey: string, recipient: string) {
 					: Effect.succeed({ deliveredId: metadata.id, attemptsUsed: metadata.attempts, recipient: item.recipient, subject: item.subject }),
 			),
 		),
-	).pipe(Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))));
-}
-`,
+		Effect.provide(PersistedQueue.layer.pipe(Layer.provide(PersistedQueue.layerStoreMemory))),
+	);
+}`,
 		fields: [
 			{
 				key: "idempotencyKey",
@@ -648,7 +619,7 @@ export function durableDispatchFlow(idempotencyKey: string, recipient: string) {
 		pipelineSpotlight:
 			"Call Entity.client to obtain (entityId) => rpcClient, then compose concurrent tenant calls with Effect.all(..., { concurrency: 'unbounded' })—the cluster routes and serializes per entity automatically.",
 		bestPractice: "Use TestRunner.layer in unit tests, SingleRunner.layer + SqlClient for single-node durability, and NodeClusterHttp / NodeClusterSocket when scaling horizontally across pods.",
-		code: `import { Effect, Ref, Schema, pipe } from "effect";
+		code: `import { Effect, Ref, Schema } from "effect";
 import { Entity } from "effect/cluster";
 import { Rpc } from "effect/rpc";
 
@@ -684,8 +655,7 @@ interface TenantState {
 }
 
 export const TenantDispatcherLive = TenantDispatcher.toLayer(
-	pipe(
-		Effect.Do,
+	Effect.Do.pipe(
 		Effect.bind("address", () => Entity.CurrentAddress),
 		Effect.bind("stateRef", () =>
 			Ref.make<TenantState>({
@@ -696,55 +666,51 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
 		Effect.map(({ address, stateRef }) =>
 			TenantDispatcher.of({
 				Dispatch: (envelope) =>
-					pipe(
-						Ref.modify(
-							stateRef,
-							(
-								state,
-							): readonly [
-								Effect.Effect<
-									{
-										readonly entityAddress: string;
-										readonly shardId: string;
-										readonly sequenceNo: number;
-										readonly subject: string;
-									},
-									DailyLimitReached
-								>,
-								TenantState,
-							] => {
-								if (state.totalSent >= 3) {
-									return [
-										Effect.fail(
-											new DailyLimitReached({
-												tenantId: address.entityId,
-												sentCount: state.totalSent,
-											}),
-										),
-										state,
-									];
-								}
-								const nextSeq = state.totalSent + 1;
-								const nextState: TenantState = {
-									totalSent: nextSeq,
-									subjects: [...state.subjects, envelope.payload.subject],
-								};
+					Ref.modify(
+						stateRef,
+						(
+							state,
+						): readonly [
+							Effect.Effect<
+								{
+									readonly entityAddress: string;
+									readonly shardId: string;
+									readonly sequenceNo: number;
+									readonly subject: string;
+								},
+								DailyLimitReached
+							>,
+							TenantState,
+						] => {
+							if (state.totalSent >= 3) {
 								return [
-									Effect.succeed({
-										entityAddress: \`\${address.entityType}/\${address.entityId}\`,
-										shardId: String(address.shardId),
-										sequenceNo: nextSeq,
-										subject: envelope.payload.subject,
-									}),
-									nextState,
+									Effect.fail(
+										new DailyLimitReached({
+											tenantId: address.entityId,
+											sentCount: state.totalSent,
+										}),
+									),
+									state,
 								];
-							},
-						),
-						Effect.flatten,
-					),
+							}
+							const nextSeq = state.totalSent + 1;
+							const nextState: TenantState = {
+								totalSent: nextSeq,
+								subjects: [...state.subjects, envelope.payload.subject],
+							};
+							return [
+								Effect.succeed({
+									entityAddress: \`\${address.entityType}/\${address.entityId}\`,
+									shardId: String(address.shardId),
+									sequenceNo: nextSeq,
+									subject: envelope.payload.subject,
+								}),
+								nextState,
+							];
+						},
+					).pipe(Effect.flatten),
 				GetLedger: () =>
-					pipe(
-						Ref.get(stateRef),
+					Ref.get(stateRef).pipe(
 						Effect.map((state) => ({
 							entityId: address.entityId,
 							totalSent: state.totalSent,
@@ -755,8 +721,7 @@ export const TenantDispatcherLive = TenantDispatcher.toLayer(
 		),
 	),
 	{ maxIdleTime: "5 minutes", concurrency: 1 },
-);
-`,
+);`,
 		fields: [
 			{
 				key: "tenantA",
@@ -798,8 +763,7 @@ export const PIPELINE_RULES: ReadonlyArray<PipelineRulePair> = [
   const quota = yield* loadQuota(user.orgId)
   return { user, quota }
 })`,
-		prefer: `pipe(
-  Effect.Do,
+		prefer: `Effect.Do.pipe(
   Effect.bind("user", () => findUser(id)),
   Effect.bind("quota", ({ user }) => loadQuota(user.orgId))
 )`,
@@ -813,8 +777,7 @@ export const PIPELINE_RULES: ReadonlyArray<PipelineRulePair> = [
   yield* AuditLog.use((log) => log.record(item.id))
   return item
 })`,
-		prefer: `pipe(
-  createItem(payload),
+		prefer: `createItem(payload).pipe(
   Effect.tap((item) => AuditLog.use((log) => log.record(item.id)))
 )`,
 		explanation: "Effect.tap runs an Effect for its side effect or requirement and passes the original value unchanged down the pipeline.",
@@ -827,8 +790,7 @@ export const PIPELINE_RULES: ReadonlyArray<PipelineRulePair> = [
 } catch (err) {
   // untyped catch
 }`,
-		prefer: `pipe(
-  charge(acct),
+		prefer: `charge(acct).pipe(
   Effect.catchTag("QuotaExceeded", (err) =>
     Effect.succeed({ recovered: true, remaining: err.remaining })
   )
@@ -842,8 +804,7 @@ export const PIPELINE_RULES: ReadonlyArray<PipelineRulePair> = [
   const clock = yield* LedgerClock
   return yield* clock.nowIso
 })`,
-		prefer: `pipe(
-  LedgerClock.use((clock) => clock.nowIso),
+		prefer: `LedgerClock.use((clock) => clock.nowIso).pipe(
   Effect.map((iso) => ({ createdAt: iso }))
 )`,
 		explanation: "In Effect v4, Context.Service provides .use(fn) and .useSync(fn) so accessing a service method is a single concise pipeline step.",

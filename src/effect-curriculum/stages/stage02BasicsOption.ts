@@ -1,4 +1,4 @@
-import { Context, Effect, Exit, Layer, Option, Schema, pipe } from "effect";
+import { Context, Effect, Exit, Layer, Option, Schema } from "effect";
 import type { StageExecutionResult, TraceEvent } from "../types";
 
 export interface Stage02Input {
@@ -30,12 +30,10 @@ export class RecipientRepo extends Context.Service<
 
 // 2. Pure pipeline using Effect.Do + Effect.bind + Option + typed errors
 export function prepareDispatch(recipientId: string, costUnits: number) {
-	return pipe(
-		Effect.Do,
+	return Effect.Do.pipe(
 		Effect.bind("maybeRecipient", () => RecipientRepo.use((repo) => repo.findById(recipientId))),
 		Effect.bind("recipient", ({ maybeRecipient }) =>
-			pipe(
-				maybeRecipient,
+			maybeRecipient.pipe(
 				Option.match({
 					onNone: () => Effect.fail(new RecipientNotFound({ recipientId })),
 					onSome: Effect.succeed,
@@ -93,8 +91,7 @@ export function runStage02(input: Stage02Input): Promise<StageExecutionResult> {
 	});
 
 	// 3. Demonstrate typed error channel inspection + recovery via Effect.catchTag
-	const programWithRecovery = pipe(
-		prepareDispatch(recipientId, costUnits),
+	const programWithRecovery = prepareDispatch(recipientId, costUnits).pipe(
 		Effect.tap((ok) => Effect.sync(() => pushTrace("Effect", "prepareDispatch", `Reserved ${ok.reservedUnits} units for ${ok.email}`))),
 		Effect.catchTag("QuotaExceeded", (err) =>
 			Effect.sync(() => {
